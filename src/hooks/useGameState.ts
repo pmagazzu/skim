@@ -15,7 +15,8 @@ interface UseGameStateReturn {
 export function useGameState(): UseGameStateReturn {
   const [state, dispatch] = useReducer(gameReducer, initialState);
 
-  const selectedCards = state.hand.filter(c => state.selectedIds.includes(c.id));
+  const allCards = [...state.hand, ...state.communityCards];
+  const selectedCards = allCards.filter(c => state.selectedIds.includes(c.id));
   const selectedHandResult = selectedCards.length >= 1 ? evaluateHand(selectedCards) : null;
   const selectedChipValue = selectedHandResult
     ? chipValue(selectedHandResult, selectedCards, state.scratchMultiplier)
