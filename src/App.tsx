@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useGameState } from './hooks/useGameState';
 import { Hand } from './components/Hand';
 import { CommunityCards } from './components/CommunityCards';
@@ -10,8 +11,11 @@ import { SkimReport } from './components/SkimReport';
 import { ResultModal } from './components/ResultModal';
 import { ConsumableResult } from './components/ConsumableResult';
 
+type SortMode = 'dealt' | 'high' | 'low' | 'suit';
+
 function App() {
   const { state, dispatch, selectedHandResult, selectedChipValue } = useGameState();
+  const [sortMode, setSortMode] = useState<SortMode>('dealt');
 
   function getBadges(): string[] {
     const badges: string[] = [];
@@ -140,6 +144,8 @@ function App() {
                 chipPreview={selectedChipValue}
                 scratchMultiplier={state.scratchMultiplier}
                 handsLeft={state.maxHandsPerRound - state.handsPlayedThisRound}
+                sortMode={sortMode}
+                onSortChange={setSortMode}
               />
             </div>
 

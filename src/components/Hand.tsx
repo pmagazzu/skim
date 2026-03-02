@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Card } from './Card';
 import type { Card as CardType } from '../game/deck';
 import type { HandResult } from '../game/hands';
@@ -26,12 +26,13 @@ interface HandProps {
   disabled?: boolean;
   scratchMultiplier: number;
   handsLeft: number;
+  sortMode: SortMode;
+  onSortChange: (mode: SortMode) => void;
 }
 
-export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResult, chipPreview, disabled, scratchMultiplier, handsLeft }: HandProps) {
+export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResult, chipPreview, disabled, scratchMultiplier, handsLeft, sortMode, onSortChange }: HandProps) {
   const canPlay = selectedIds.length >= 1 && selectedIds.length <= 5 && !disabled;
   const canDiscard = !disabled && handsLeft > 1;
-  const [sortMode, setSortMode] = useState<SortMode>('dealt');
 
   const sortedHand = useMemo(() => sortCards(hand, sortMode), [hand, sortMode]);
 
@@ -50,7 +51,7 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
         {SORT_OPTIONS.map(o => (
           <button
             key={o.mode}
-            onClick={() => setSortMode(o.mode)}
+            onClick={() => onSortChange(o.mode)}
             className={[
               'text-xs px-2 py-1 rounded transition-all',
               sortMode === o.mode
