@@ -9,6 +9,7 @@ import { ChipStack } from './components/ChipStack';
 import { Shop } from './components/Shop';
 import { SkimReport } from './components/SkimReport';
 import { ResultModal } from './components/ResultModal';
+import { ScoreChain } from './components/ScoreChain';
 import { ConsumableResult } from './components/ConsumableResult';
 
 type SortMode = 'dealt' | 'high' | 'low' | 'suit';
@@ -101,7 +102,11 @@ function App() {
                 : `Vault target: ${state.vaultTarget.toLocaleString()} chips`}
             </div>
             {state.chipStack.length > 0 && (
-              <ChipStack chips={state.chipStack} blackChipUsed={false} />
+              <ChipStack
+                chips={state.chipStack}
+                blackChipUsed={false}
+                onReorder={(from, to) => dispatch({ type: 'REORDER_CHIPS', fromIndex: from, toIndex: to })}
+              />
             )}
             <button onClick={() => dispatch({ type: 'DEAL' })} className="btn-primary text-xl px-16 py-4">
               DEAL
@@ -132,6 +137,7 @@ function App() {
               onSelect={id => dispatch({ type: 'SELECT_CARD', id })}
               deckCount={state.deck.length}
               newCardIds={state.newCommunityIds}
+              onClearNew={() => dispatch({ type: 'CLEAR_NEW_COMMUNITY' })}
             />
 
             {/* Felt / hand area */}
@@ -151,6 +157,17 @@ function App() {
               />
             </div>
 
+            {/* Scoring chain — shown after a hand is played */}
+            {state.lastScore !== null && state.lastBaseScore !== null && (
+              <ScoreChain
+                baseScore={state.lastBaseScore}
+                handName={state.lastHandName ?? ''}
+                steps={state.lastScoreChain}
+                finalScore={state.lastScore}
+                skimRate={state.skimRate}
+              />
+            )}
+
             {/* Bottom row: consumables + chip stack */}
             <div className="flex gap-4 items-start">
               <Consumables
@@ -160,7 +177,11 @@ function App() {
                 scratchMultiplier={state.scratchMultiplier}
               />
               {state.chipStack.length > 0 && (
-                <ChipStack chips={state.chipStack} blackChipUsed={state.blackChipUsedThisRound} />
+                <ChipStack
+                  chips={state.chipStack}
+                  blackChipUsed={state.blackChipUsedThisRound}
+                  onReorder={(from, to) => dispatch({ type: 'REORDER_CHIPS', fromIndex: from, toIndex: to })}
+                />
               )}
             </div>
 

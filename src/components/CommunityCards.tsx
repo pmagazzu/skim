@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Card } from './Card';
 import type { Card as CardType } from '../game/deck';
 
@@ -8,6 +9,7 @@ interface CommunityCardsProps {
   disabled?: boolean;
   deckCount: number;
   newCardIds: string[];
+  onClearNew: () => void;
 }
 
 function DeckPile({ count }: { count: number }) {
@@ -36,7 +38,12 @@ function DeckPile({ count }: { count: number }) {
   );
 }
 
-export function CommunityCards({ cards, selectedIds, onSelect, disabled, deckCount, newCardIds }: CommunityCardsProps) {
+export function CommunityCards({ cards, selectedIds, onSelect, disabled, deckCount, newCardIds, onClearNew }: CommunityCardsProps) {
+  useEffect(() => {
+    if (newCardIds.length === 0) return;
+    const t = setTimeout(onClearNew, 3000);
+    return () => clearTimeout(t);
+  }, [newCardIds, onClearNew]);
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="flex items-center gap-2">

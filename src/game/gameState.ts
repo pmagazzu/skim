@@ -4,8 +4,8 @@ import { evaluateHand } from './hands';
 import { chipValue } from './scoring';
 import { ConsumableType, rollScratchMultiplier } from './consumables';
 import type { ConsumableTypeValue } from './consumables';
-import { ChipType, applyChips, bonusHandsFromChips, CHIPS } from './chips';
-import type { ChipTypeValue } from './chips';
+import { ChipType, applyChipsSequential, bonusHandsFromChips, CHIPS } from './chips';
+import type { ChipTypeValue, ScoreStep } from './chips';
 import { generateBounties, checkBountyCondition, BountyReward } from './bounties';
 import type { Bounty } from './bounties';
 
@@ -66,6 +66,7 @@ export interface GameState {
   round: number;
   totalRounds: number;
   lastScore: number | null;
+  lastBaseScore: number | null;
   lastHandName: string | null;
   lastBonusDetail: string | null;
   consumableResult: { title: string; message: string } | null;
@@ -79,12 +80,15 @@ export interface GameState {
   discardedThisRound: boolean;
   bestHandScoreThisRound: number;
   bestHandRankThisRound: number;
-  newCommunityIds: string[];  // just-drawn community cards (for flash animation)
+  newCommunityIds: string[];
+  lastScoreChain: ScoreStep[];  // sequential chip scoring steps for display
 }
 
 export type GameAction =
   | { type: 'SET_DIFFICULTY'; difficulty: Difficulty }
   | { type: 'ACCEPT_BOUNTY'; bountyId: string }
+  | { type: 'REORDER_CHIPS'; fromIndex: number; toIndex: number }
+  | { type: 'CLEAR_NEW_COMMUNITY' }
   | { type: 'DEAL' }
   | { type: 'SELECT_CARD'; id: string }
   | { type: 'PLAY_HAND' }
@@ -183,6 +187,7 @@ export const initialState: GameState = {
   totalRounds: 3,
   maxHandsPerRound: MAX_HANDS_PER_ROUND,
   lastScore: null,
+  lastBaseScore: null,
   lastHandName: null,
   lastBonusDetail: null,
   roundHistory: [],
@@ -197,6 +202,7 @@ export const initialState: GameState = {
   bestHandScoreThisRound: 0,
   bestHandRankThisRound: 0,
   newCommunityIds: [],
+  lastScoreChain: [],
 };
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -235,11 +241,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         bestHandScoreThisRound: 0,
         bestHandRankThisRound: 0,
         lastScore: null,
+        lastBaseScore: null,
         lastHandName: null,
         lastBonusDetail: null,
         scratchMultiplier: 1,
         maxHandsPerRound: base + bonus,
         newCommunityIds: [],
+        lastScoreChain: [],
         activeBounties: state.availableBounties.filter(b => b.accepted),
       };
     }
@@ -287,35 +295,31 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const handResult = evaluateHand(selectedCards);
       const baseChips = chipValue(handResult, selectedCards, state.scratchMultiplier);
 
-      // Apply chip stack bonuses
-      const bonuses = applyChips(
+      // Apply chips SEQUENTIALLY — order matters!
+      const chain = applyChipsSequential(
         state.chipStack,
+        baseChips,
         handResult.rank,
         state.handsPlayedThisRound,
         state.blackChipUsedThisRound,
       );
 
-      const afterFlat = baseChips + bonuses.flatBonus;
-      const total = Math.floor(afterFlat * bonuses.multiplier);
+      const total = chain.finalScore;
 
       // Skim split
-      const effectiveSkimRate = bonuses.skimDoubled ? Math.min(0.9, state.skimRate * 2) : state.skimRate;
+      const effectiveSkimRate = chain.skimDoubled ? Math.min(0.9, state.skimRate * 2) : state.skimRate;
       const skimmed = Math.floor(total * effectiveSkimRate);
-      // Diamond chip: skim also feeds vault at 50%
-      const diamondBonus = bonuses.diamondActive ? Math.floor(skimmed * 0.5) : 0;
-      const vaultChips = total - skimmed + bonuses.vaultBonus + diamondBonus;
+      const diamondBonus = chain.diamondActive ? Math.floor(skimmed * 0.5) : 0;
+      const vaultChips = total - skimmed + chain.vaultBonus + diamondBonus;
 
       const newVault = state.vault + vaultChips;
       const newPersonal = state.personalChips + skimmed;
       const newRoundChips = state.roundChips + skimmed;
 
-      // Build bonus detail string
       const bonusParts: string[] = [];
-      if (bonuses.flatBonus > 0) bonusParts.push(`+${bonuses.flatBonus} chips`);
-      if (bonuses.multiplier > 1) bonusParts.push(`×${bonuses.multiplier.toFixed(1)}`);
-      if (bonuses.skimDoubled) bonusParts.push('skim ×2!');
-      if (bonuses.vaultBonus > 0) bonusParts.push(`+${bonuses.vaultBonus} vault bonus!`);
-      if (bonuses.diamondActive && diamondBonus > 0) bonusParts.push(`💎 +${diamondBonus} to vault`);
+      if (chain.skimDoubled) bonusParts.push('skim ×2!');
+      if (chain.vaultBonus > 0) bonusParts.push(`+${chain.vaultBonus} vault!`);
+      if (chain.diamondActive && diamondBonus > 0) bonusParts.push(`💎 +${diamondBonus} vault`);
 
       // Check per-hand bounties
       const updatedBounties = state.activeBounties.map(b => {
@@ -361,14 +365,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         selectedIds: [],
         scratchMultiplier: 1,
         newCommunityIds,
-        blackChipUsedThisRound: bonuses.skimDoubled ? true : state.blackChipUsedThisRound,
+        blackChipUsedThisRound: chain.skimDoubled ? true : state.blackChipUsedThisRound,
         handsPlayedThisRound: newHandsPlayed,
         bestHandScoreThisRound: Math.max(state.bestHandScoreThisRound, total),
         bestHandRankThisRound: Math.max(state.bestHandRankThisRound, handResult.rank),
         activeBounties: updatedBounties,
         lastScore: total,
+        lastBaseScore: baseChips,
         lastHandName: handResult.name,
         lastBonusDetail: bonusParts.length > 0 ? bonusParts.join(' · ') : null,
+        lastScoreChain: chain.steps,
       };
     }
 
@@ -536,6 +542,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       );
       return { ...state, availableBounties: updated };
     }
+
+    case 'REORDER_CHIPS': {
+      const { fromIndex, toIndex } = action;
+      const chips = [...state.chipStack];
+      const [moved] = chips.splice(fromIndex, 1);
+      chips.splice(toIndex, 0, moved);
+      return { ...state, chipStack: chips };
+    }
+
+    case 'CLEAR_NEW_COMMUNITY':
+      return { ...state, newCommunityIds: [] };
 
     case 'RESET':
       return { ...initialState };
