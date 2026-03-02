@@ -46,7 +46,7 @@ function getCombinations(cards: Card[], k: number): Card[][] {
 function evaluate5(cards: Card[]): HandResult {
   const ranks = cards.map(c => c.rank).sort((a, b) => b - a);
   const suits = cards.map(c => c.suit);
-  const isFlush = suits.every(s => s === suits[0]);
+  const isFlush = cards.length === 5 && suits.every(s => s === suits[0]);
   const isStraight = ranks[0] - ranks[4] === 4 && new Set(ranks).size === 5;
   const isAceLow = JSON.stringify(ranks) === JSON.stringify([14,5,4,3,2]);
 

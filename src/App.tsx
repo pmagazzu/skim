@@ -7,6 +7,7 @@ import { Consumables } from './components/Consumables';
 import { ChipStack } from './components/ChipStack';
 import { Shop } from './components/Shop';
 import { SkimReport } from './components/SkimReport';
+import { ConsumableResult } from './components/ConsumableResult';
 
 function App() {
   const { state, dispatch, selectedHandResult, selectedChipValue } = useGameState();
@@ -37,6 +38,13 @@ function App() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
       <div className="vignette" />
+      {state.consumableResult && (
+        <ConsumableResult
+          title={state.consumableResult.title}
+          message={state.consumableResult.message}
+          onDismiss={() => dispatch({ type: 'DISMISS_RESULT' })}
+        />
+      )}
 
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-white/5">
@@ -121,7 +129,12 @@ function App() {
               )}
             </div>
 
-            <div className="text-center section-label">{state.deck.length} cards remaining</div>
+            <div className="flex justify-center gap-6 section-label">
+              <span>{state.deck.length} cards left</span>
+              <span className={state.handsPlayedThisRound >= state.maxHandsPerRound - 2 ? 'text-red-600' : ''}>
+                {state.maxHandsPerRound - state.handsPlayedThisRound} hands remaining
+              </span>
+            </div>
           </div>
         )}
 

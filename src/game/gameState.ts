@@ -1,4 +1,4 @@
-import { createDeck, shuffle } from './deck';
+import { createDeck, shuffle, rankName, suitSymbol } from './deck';
 import type { Card } from './deck';
 import { evaluateHand } from './hands';
 import { chipValue } from './scoring';
@@ -39,6 +39,7 @@ export interface GameState {
   hand: Card[];
   communityCards: Card[];
   selectedIds: string[];
+  maxHandsPerRound: number;
   vault: number;
   vaultTarget: number;
   skimRate: number;
@@ -55,6 +56,7 @@ export interface GameState {
   lastScore: number | null;
   lastHandName: string | null;
   lastBonusDetail: string | null;
+  consumableResult: { title: string; message: string } | null;
   roundHistory: RoundResult[];
   rouletteWins: number;
   handSize: number;
@@ -66,12 +68,14 @@ export type GameAction =
   | { type: 'PLAY_HAND' }
   | { type: 'USE_CONSUMABLE'; consumable: ConsumableTypeValue }
   | { type: 'ROULETTE_BET'; amount: number }
+  | { type: 'DISMISS_RESULT' }
   | { type: 'BUY_ITEM'; itemId: string }
   | { type: 'END_SHOP' }
   | { type: 'NEXT_ROUND' }
   | { type: 'RESET' };
 
 const HAND_SIZE = 5;
+const MAX_HANDS_PER_ROUND = 8;
 const MAX_CONSUMABLES = 4;
 const MAX_CHIPS = 5;
 const COMMUNITY_COUNT = 3;
@@ -163,12 +167,14 @@ export const initialState: GameState = {
   shopItems: [],
   round: 1,
   totalRounds: 3,
+  maxHandsPerRound: MAX_HANDS_PER_ROUND,
   lastScore: null,
   lastHandName: null,
   lastBonusDetail: null,
   roundHistory: [],
   rouletteWins: 0,
   handSize: HAND_SIZE,
+  consumableResult: null,
 };
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -250,10 +256,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const newDeck = state.deck.slice(needed);
       const newHand = [...remainingHand, ...drawn];
 
+      const newHandsPlayed = state.handsPlayedThisRound + 1;
       const vaultFilled = newVault >= state.vaultTarget;
+      const outOfHands = newHandsPlayed >= state.maxHandsPerRound;
       const deckEmpty = newDeck.length === 0 && newHand.length < state.handSize;
       let phase: GamePhase = 'selecting';
-      if (vaultFilled || deckEmpty) phase = 'round-end';
+      if (vaultFilled || deckEmpty || outOfHands) phase = 'round-end';
 
       return {
         ...state,
@@ -266,7 +274,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         selectedIds: [],
         scratchMultiplier: 1,
         blackChipUsedThisRound: bonuses.skimDoubled ? true : state.blackChipUsedThisRound,
-        handsPlayedThisRound: state.handsPlayedThisRound + 1,
+        handsPlayedThisRound: newHandsPlayed,
         lastScore: total,
         lastHandName: handResult.name,
         lastBonusDetail: bonusParts.length > 0 ? bonusParts.join(' · ') : null,
@@ -280,12 +288,35 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       newConsumables.splice(newConsumables.indexOf(consumable), 1);
 
       if (consumable === ConsumableType.SCRATCH_TICKET) {
-        return { ...state, consumables: newConsumables, scratchMultiplier: rollScratchMultiplier() };
+        const mult = rollScratchMultiplier();
+        return {
+          ...state,
+          consumables: newConsumables,
+          scratchMultiplier: mult,
+          consumableResult: {
+            title: '🎫 Scratch Ticket',
+            message: mult === 1
+              ? 'No luck — ×1 multiplier this time.'
+              : `You scratched ×${mult}! Your next hand scores ${mult}× chips.`,
+          },
+        };
       }
       if (consumable === ConsumableType.HIGH_CARD_DRAW) {
         const drawn = state.deck.slice(0, 2);
         const newDeck = state.deck.slice(2);
-        return { ...state, consumables: newConsumables, hand: [...state.hand, ...drawn], deck: newDeck };
+        const cardNames = drawn.map((c: Card) => `${rankName(c.rank)}${suitSymbol(c.suit)}`).join(' and ');
+        return {
+          ...state,
+          consumables: newConsumables,
+          hand: [...state.hand, ...drawn],
+          deck: newDeck,
+          consumableResult: {
+            title: '🃏 High Card Draw',
+            message: drawn.length === 0
+              ? 'Deck is empty — no cards to draw.'
+              : `Drew ${cardNames} into your hand.`,
+          },
+        };
       }
       return { ...state, consumables: newConsumables };
     }
@@ -297,8 +328,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         personalChips: Math.max(0, state.personalChips + (win ? bet : -bet)),
         rouletteWins: win ? state.rouletteWins + 1 : state.rouletteWins,
+        consumableResult: {
+          title: win ? '🎰 You Won!' : '🎰 The House Wins',
+          message: win
+            ? `The wheel hit your number. +${bet} chips added to your bank.`
+            : `Better luck next time. -${bet} chips.`,
+        },
       };
     }
+
+    case 'DISMISS_RESULT':
+      return { ...state, consumableResult: null };
 
     case 'BUY_ITEM': {
       const item = state.shopItems.find(i => i.id === action.itemId);
