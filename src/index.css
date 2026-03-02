@@ -1,43 +1,216 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background-color: #0f0e17;
-  color: #fffffe;
-  font-family: system-ui, sans-serif;
-  min-height: 100vh;
+:root {
+  --bg: #0d0b0e;
+  --felt: #0f2318;
+  --felt-border: #1a3a28;
+  --gold: #c9a84c;
+  --gold-bright: #f0c060;
+  --red: #c0392b;
+  --card-bg: #faf6ef;
 }
 
-.card-red { color: #dc2626; }
-.card-black { color: #1a1a2e; }
+* { box-sizing: border-box; }
 
-.vault-glow {
-  box-shadow: 0 0 12px #22c55e, 0 0 24px #22c55e55;
+body {
+  background-color: var(--bg);
+  color: #e8dcc8;
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grain overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+}
+
+/* Felt table */
+.felt {
+  background: radial-gradient(ellipse at center, #142b1c 0%, #0a1a10 100%);
+  border: 2px solid var(--felt-border);
+  border-radius: 1rem;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.6), 0 0 40px rgba(0,0,0,0.5);
+  position: relative;
+}
+
+.felt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255,255,255,0.005) 2px,
+    rgba(255,255,255,0.005) 4px
+  );
+  pointer-events: none;
+}
+
+/* Cards */
+.card-red { color: #b91c1c; }
+.card-black { color: #1c1917; }
+
+.card-face {
+  background: linear-gradient(145deg, #fdfaf3, #f0ead8);
+  border: 1px solid #d4c9a8;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.8);
 }
 
 .card-selected {
-  transform: translateY(-8px) scale(1.05);
-  box-shadow: 0 0 0 3px #facc15, 0 4px 16px #facc1566;
+  transform: translateY(-10px) scale(1.06);
+  box-shadow: 0 0 0 2px var(--gold-bright), 0 8px 20px rgba(201, 168, 76, 0.4);
 }
 
-.felt {
-  background-color: #1a3a2a;
-  border-radius: 1rem;
+/* Gold text glow */
+.gold-glow {
+  color: var(--gold-bright);
+  text-shadow: 0 0 12px rgba(240, 192, 96, 0.5);
 }
 
-.chip-glow {
-  text-shadow: 0 0 8px #facc15;
+/* Chip counter */
+.chip-counter {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
 }
 
-@keyframes pop-in {
-  0% { transform: scale(0.8); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+/* Vault bar */
+.vault-bar-fill {
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.pop-in { animation: pop-in 0.2s ease-out; }
 
-@keyframes score-float {
-  0% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(-40px); opacity: 0; }
+.vault-bar-full {
+  background: linear-gradient(90deg, #15803d, #4ade80);
+  box-shadow: 0 0 12px #22c55e, 0 0 24px rgba(34,197,94,0.3);
 }
-.score-float { animation: score-float 1s ease-out forwards; }
+
+/* Buttons */
+.btn-primary {
+  background: linear-gradient(135deg, #c9a84c, #e8c56a);
+  color: #1a0f00;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.6rem 2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(201,168,76,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+  transition: all 0.15s;
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #e8c56a, #f5d87a);
+  box-shadow: 0 6px 20px rgba(201,168,76,0.5);
+  transform: translateY(-1px);
+}
+.btn-primary:disabled {
+  background: #2a2320;
+  color: #5a4f3f;
+  box-shadow: none;
+  transform: none;
+  cursor: default;
+}
+
+.btn-secondary {
+  background: rgba(255,255,255,0.05);
+  color: #9a8a72;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1.2rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.1);
+  color: #c8b89a;
+}
+
+/* Score popup */
+@keyframes score-pop {
+  0%   { transform: translateY(0) scale(1); opacity: 1; }
+  60%  { transform: translateY(-30px) scale(1.3); opacity: 1; }
+  100% { transform: translateY(-60px) scale(0.9); opacity: 0; }
+}
+.score-pop {
+  animation: score-pop 1.2s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes deal-in {
+  from { transform: translateY(-20px) scale(0.9); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+.deal-in {
+  animation: deal-in 0.25s ease-out both;
+}
+
+/* Section label */
+.section-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #6b5a3e;
+}
+
+/* Title font */
+.title-font {
+  font-family: 'Cinzel', serif;
+}
+
+/* Scanline / vignette */
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%);
+  z-index: 100;
+}
+
+/* Shop card */
+.shop-card {
+  background: linear-gradient(145deg, #1a1410, #120f0c);
+  border: 1px solid #3a2e1e;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  transition: border-color 0.15s;
+}
+.shop-card:hover { border-color: #6b5a3e; }
+
+/* Chip token */
+.chip-token {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  border: 3px solid rgba(255,255,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 0.7rem;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+  position: relative;
+}
+.chip-token::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255,255,255,0.1);
+}

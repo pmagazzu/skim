@@ -8,18 +8,20 @@ export function Vault({ chips, target }: VaultProps) {
   const full = chips >= target;
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex justify-between items-center">
-        <span className="text-xs text-gray-400 uppercase tracking-widest">Vault</span>
-        <span className="text-sm font-bold text-green-400">{chips.toLocaleString()} / {target.toLocaleString()}</span>
+    <div className="flex flex-col gap-2">
+      <div className="flex justify-between items-baseline">
+        <span className="section-label">Vault</span>
+        <span className={['text-sm font-bold chip-counter', full ? 'gold-glow' : 'text-emerald-400'].join(' ')}>
+          {chips.toLocaleString()} <span className="text-gray-600">/</span> {target.toLocaleString()}
+        </span>
       </div>
-      <div className="w-full h-5 bg-gray-800 rounded overflow-hidden border border-gray-700">
+      <div className="w-full h-4 bg-black/40 rounded-full overflow-hidden border border-white/5">
         <div
-          className={['h-full rounded transition-all duration-500', full ? 'bg-green-400 vault-glow' : 'bg-green-600'].join(' ')}
+          className={['h-full rounded-full vault-bar-fill', full ? 'vault-bar-full' : ''].join(' ')}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <div className="text-right text-xs text-gray-500">{pct}%</div>
+      {full && <div className="text-center text-xs text-emerald-400 font-semibold tracking-widest">✦ VAULT FULL ✦</div>}
     </div>
   );
 }

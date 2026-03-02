@@ -8,43 +8,39 @@ interface SkimReportProps {
 }
 
 export function SkimReport({ result, round, totalRounds, onContinue }: SkimReportProps) {
-  const solidarityBonus = result.vaultPct === 100 && (1 - result.skimRate) >= 0.6;
+  const solidarityBonus = result.vaultFilled && (1 - result.skimRate) >= 0.6;
   const lastRound = round >= totalRounds;
 
   return (
-    <div className="flex flex-col items-center gap-5 p-8 text-center">
-      <div className={['text-5xl font-black tracking-widest', result.vaultFilled ? 'text-green-400' : 'text-red-500'].join(' ')}>
-        {result.vaultFilled ? '✅ VAULT FILLED' : '💀 BUST'}
+    <div className="flex flex-col items-center gap-6 p-8 text-center max-w-sm mx-auto">
+      <div className={['title-font text-4xl tracking-widest', result.vaultFilled ? 'text-emerald-400' : 'text-red-500'].join(' ')}>
+        {result.vaultFilled ? '✦ VAULT FILLED ✦' : '✦ BUST ✦'}
       </div>
+      <div className="section-label">Round {result.round} of {totalRounds}</div>
 
-      <div className="text-gray-400 text-sm">Round {result.round} of {totalRounds}</div>
-
-      <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 w-full max-w-xs flex flex-col gap-3">
+      <div className="w-full bg-black/30 border border-white/5 rounded-2xl p-5 flex flex-col gap-3">
         <div className="flex justify-between">
-          <span className="text-gray-400">Vault filled</span>
-          <span className={result.vaultPct >= 100 ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
+          <span className="text-gray-500">Vault</span>
+          <span className={result.vaultFilled ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold'}>
             {result.vaultPct}%
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-400">Chips skimmed</span>
-          <span className="text-yellow-400 font-bold">+{result.personalChips}</span>
+          <span className="text-gray-500">Chips skimmed</span>
+          <span className="gold-glow font-bold chip-counter">+{result.personalChips}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-400">Your skim rate</span>
-          <span className="text-orange-400 font-semibold">{Math.round(result.skimRate * 100)}%</span>
+          <span className="text-gray-500">Skim rate</span>
+          <span className="text-amber-500">{Math.round(result.skimRate * 100)}%</span>
         </div>
         {solidarityBonus && (
-          <div className="mt-1 pt-2 border-t border-green-800 text-green-400 text-sm font-semibold">
-            🤝 Solidarity Bonus! Low skim = team player points
+          <div className="pt-2 border-t border-white/5 text-emerald-400 text-sm font-semibold">
+            🤝 Solidarity Bonus — you kept it honest
           </div>
         )}
       </div>
 
-      <button
-        onClick={onContinue}
-        className="px-10 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-lg rounded-lg tracking-wider"
-      >
+      <button onClick={onContinue} className="btn-primary text-base px-12">
         {result.vaultFilled && !lastRound ? 'TO SHOP →' : result.vaultFilled ? 'FINAL RESULTS →' : 'GAME OVER'}
       </button>
     </div>

@@ -5,7 +5,7 @@ import type { ConsumableTypeValue } from '../game/consumables';
 interface ConsumablesProps {
   held: ConsumableTypeValue[];
   onUse: (type: ConsumableTypeValue) => void;
-  onRouletteBet: (amount: number) => void
+  onRouletteBet: (amount: number) => void;
   disabled?: boolean;
   scratchMultiplier: number;
 }
@@ -32,13 +32,13 @@ export function Consumables({ held, onUse, onRouletteBet, disabled, scratchMulti
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="text-xs text-gray-400 uppercase tracking-widest">Consumables</div>
+      <div className="section-label">Consumables</div>
       <div className="flex gap-2">
         {slots.map((type, i) => {
           if (!type) {
             return (
-              <div key={i} className="w-16 h-20 border border-dashed border-gray-700 rounded-lg flex items-center justify-center text-gray-700 text-xs">
-                empty
+              <div key={i} className="w-16 h-20 border border-dashed border-white/10 rounded-xl flex items-center justify-center text-gray-700 text-xs">
+                —
               </div>
             );
           }
@@ -51,53 +51,38 @@ export function Consumables({ held, onUse, onRouletteBet, disabled, scratchMulti
               disabled={disabled}
               title={c.description}
               className={[
-                'w-16 h-20 rounded-lg flex flex-col items-center justify-center gap-1 border transition-all text-xs font-semibold',
+                'w-16 h-20 rounded-xl flex flex-col items-center justify-center gap-1 border transition-all text-xs font-semibold',
                 active
-                  ? 'border-orange-400 bg-orange-900/40 text-orange-300'
-                  : 'border-yellow-600 bg-yellow-950/40 hover:bg-yellow-900/40 text-yellow-300',
+                  ? 'border-orange-500 bg-orange-900/30 text-orange-300'
+                  : 'border-amber-800/40 bg-amber-950/20 hover:border-amber-600 text-amber-400',
                 disabled ? 'opacity-50 cursor-default' : 'cursor-pointer',
               ].join(' ')}
             >
               <span className="text-2xl">{c.icon}</span>
-              <span className="text-center leading-tight px-1">{c.name}</span>
-              {active && <span className="text-orange-400 text-xs">×{scratchMultiplier}</span>}
+              <span className="text-center leading-tight px-0.5 text-xs">{c.name.split(' ')[0]}</span>
+              {active && <span className="text-orange-400 text-xs font-bold">×{scratchMultiplier}</span>}
             </button>
           );
         })}
       </div>
 
-      {/* Roulette modal */}
       {rouletteOpen && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-900 border border-yellow-600 rounded-xl p-6 w-72 flex flex-col gap-4">
-            <h3 className="text-yellow-400 text-lg font-bold text-center">🎰 Roulette</h3>
-            <p className="text-gray-300 text-sm text-center">50/50 — double or lose your bet</p>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-[#120f0c] border border-amber-800/40 rounded-2xl p-6 w-72 flex flex-col gap-4 shadow-2xl">
+            <h3 className="title-font text-amber-400 text-xl text-center tracking-widest">🎰 Roulette</h3>
+            <p className="text-gray-400 text-sm text-center">50/50 — double or lose your bet</p>
             <div className="flex flex-col gap-2">
-              <label className="text-gray-400 text-xs">Bet amount (max 50)</label>
+              <label className="section-label">Bet amount (max 50)</label>
               <input
-                type="range"
-                min={5}
-                max={50}
-                step={5}
-                value={betAmount}
+                type="range" min={5} max={50} step={5} value={betAmount}
                 onChange={e => setBetAmount(Number(e.target.value))}
-                className="w-full"
+                className="w-full accent-amber-500"
               />
-              <div className="text-center text-yellow-400 font-bold text-xl">{betAmount} chips</div>
+              <div className="text-center gold-glow font-bold text-2xl chip-counter">{betAmount} chips</div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setRouletteOpen(false)}
-                className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded text-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRoulette}
-                className="flex-1 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded"
-              >
-                SPIN
-              </button>
+            <div className="flex gap-2 mt-1">
+              <button onClick={() => setRouletteOpen(false)} className="btn-secondary flex-1 py-2">Cancel</button>
+              <button onClick={handleRoulette} className="btn-primary flex-1 py-2 text-sm">SPIN</button>
             </div>
           </div>
         </div>
