@@ -1,10 +1,48 @@
+export const ChipRarity = {
+  COMMON:    'common',
+  UNCOMMON:  'uncommon',
+  RARE:      'rare',
+  LEGENDARY: 'legendary',
+} as const;
+
+export type ChipRarityValue = typeof ChipRarity[keyof typeof ChipRarity];
+
+export const RARITY_LABELS: Record<ChipRarityValue, string> = {
+  common:    '○ Common',
+  uncommon:  '◑ Uncommon',
+  rare:      '● Rare',
+  legendary: '★ Legendary',
+};
+
+export const RARITY_COLORS: Record<ChipRarityValue, string> = {
+  common:    'text-gray-400',
+  uncommon:  'text-blue-400',
+  rare:      'text-purple-400',
+  legendary: 'text-yellow-300',
+};
+
+// Weighted rarity roll
+export function rollRarity(round: number): ChipRarityValue {
+  const r = Math.random() * 100;
+  if (round < 2) {
+    if (r < 60) return 'common';
+    if (r < 85) return 'uncommon';
+    return 'rare';
+  }
+  if (r < 45) return 'common';
+  if (r < 72) return 'uncommon';
+  if (r < 92) return 'rare';
+  return 'legendary';
+}
+
 export const ChipType = {
-  RED:    'RED',
-  BLUE:   'BLUE',
-  BLACK:  'BLACK',
-  GOLD:   'GOLD',
-  LUCKY:  'LUCKY',
-  SILVER: 'SILVER',
+  RED:      'RED',
+  BLUE:     'BLUE',
+  BLACK:    'BLACK',
+  GOLD:     'GOLD',
+  LUCKY:    'LUCKY',
+  SILVER:   'SILVER',
+  DIAMOND:  'DIAMOND',
 } as const;
 
 export type ChipTypeValue = typeof ChipType[keyof typeof ChipType];
@@ -16,6 +54,7 @@ export interface Chip {
   color: string;
   textColor: string;
   cost: number;
+  rarity: ChipRarityValue;
 }
 
 export const CHIPS: Record<ChipTypeValue, Chip> = {
@@ -26,6 +65,7 @@ export const CHIPS: Record<ChipTypeValue, Chip> = {
     color: 'bg-red-600',
     textColor: 'text-red-400',
     cost: 40,
+    rarity: 'common',
   },
   BLUE: {
     type: ChipType.BLUE,
@@ -34,6 +74,7 @@ export const CHIPS: Record<ChipTypeValue, Chip> = {
     color: 'bg-blue-600',
     textColor: 'text-blue-400',
     cost: 60,
+    rarity: 'uncommon',
   },
   BLACK: {
     type: ChipType.BLACK,
@@ -42,6 +83,7 @@ export const CHIPS: Record<ChipTypeValue, Chip> = {
     color: 'bg-gray-800',
     textColor: 'text-gray-300',
     cost: 80,
+    rarity: 'rare',
   },
   GOLD: {
     type: ChipType.GOLD,
@@ -50,6 +92,7 @@ export const CHIPS: Record<ChipTypeValue, Chip> = {
     color: 'bg-yellow-500',
     textColor: 'text-yellow-400',
     cost: 100,
+    rarity: 'rare',
   },
   LUCKY: {
     type: ChipType.LUCKY,
@@ -58,6 +101,7 @@ export const CHIPS: Record<ChipTypeValue, Chip> = {
     color: 'bg-purple-600',
     textColor: 'text-purple-400',
     cost: 50,
+    rarity: 'common',
   },
   SILVER: {
     type: ChipType.SILVER,
@@ -66,6 +110,16 @@ export const CHIPS: Record<ChipTypeValue, Chip> = {
     color: 'bg-gray-400',
     textColor: 'text-gray-300',
     cost: 70,
+    rarity: 'uncommon',
+  },
+  DIAMOND: {
+    type: ChipType.DIAMOND,
+    name: 'Diamond Chip',
+    description: 'Your skim also contributes 50% to the vault. Take it all.',
+    color: 'bg-cyan-300',
+    textColor: 'text-cyan-300',
+    cost: 200,
+    rarity: 'legendary',
   },
 };
 
@@ -83,6 +137,7 @@ export interface ChipBonusResult {
   multiplier: number;
   skimDoubled: boolean;
   vaultBonus: number;
+  diamondActive: boolean;  // skim also feeds vault at 50%
 }
 
 export function applyChips(
@@ -95,6 +150,7 @@ export function applyChips(
   let multiplier = 1.0;
   let skimDoubled = false;
   let vaultBonus = 0;
+  let diamondActive = false;
 
   for (const chip of chips) {
     switch (chip) {
@@ -114,10 +170,12 @@ export function applyChips(
         flatBonus += 10 + Math.floor(Math.random() * 41);
         break;
       case ChipType.SILVER:
-        // Handled at deal time via bonusHandsFromChips
+        break;
+      case ChipType.DIAMOND:
+        diamondActive = true;
         break;
     }
   }
 
-  return { flatBonus, multiplier, skimDoubled, vaultBonus };
+  return { flatBonus, multiplier, skimDoubled, vaultBonus, diamondActive };
 }

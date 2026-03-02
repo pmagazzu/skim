@@ -162,6 +162,22 @@ function App() {
               )}
             </div>
 
+            {/* Active bounties tracker */}
+            {state.activeBounties.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {state.activeBounties.map(b => (
+                  <div key={b.id} className={[
+                    'text-xs px-2 py-1 rounded border',
+                    b.completed
+                      ? 'border-emerald-700 text-emerald-400 line-through opacity-60'
+                      : 'border-amber-800/40 text-amber-600',
+                  ].join(' ')}>
+                    {b.completed ? '✓' : '◎'} {b.title}
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="flex justify-center gap-6 section-label">
               <span>{state.deck.length} cards left</span>
               <span className={state.handsPlayedThisRound >= state.maxHandsPerRound - 2 ? 'text-red-600' : ''}>
@@ -188,7 +204,9 @@ function App() {
             personalChips={state.personalChips}
             consumableCount={state.consumables.length}
             chipCount={state.chipStack.length}
+            availableBounties={state.availableBounties}
             onBuy={id => dispatch({ type: 'BUY_ITEM', itemId: id })}
+            onAcceptBounty={id => dispatch({ type: 'ACCEPT_BOUNTY', bountyId: id })}
             onEndShop={() => dispatch({ type: 'END_SHOP' })}
           />
         )}

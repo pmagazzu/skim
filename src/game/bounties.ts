@@ -1,0 +1,188 @@
+import type { HandRankValue } from './hands';
+import { HandRank } from './hands';
+
+export const BountyCondition = {
+  PLAY_HAND_RANK:     'PLAY_HAND_RANK',     // play a hand of X rank or better
+  KEEP_SKIM_UNDER:    'KEEP_SKIM_UNDER',    // end round with skim rate under X%
+  HANDS_REMAINING:    'HANDS_REMAINING',    // fill vault with X+ hands remaining
+  USE_CONSUMABLE:     'USE_CONSUMABLE',     // use any consumable this round
+  NO_DISCARD:         'NO_DISCARD',         // don't discard any hands
+  SCORE_IN_ONE:       'SCORE_IN_ONE',       // score 200+ chips in a single hand
+} as const;
+
+export type BountyConditionType = typeof BountyCondition[keyof typeof BountyCondition];
+
+export const BountyReward = {
+  CHIPS:          'CHIPS',          // flat chip reward
+  VAULT_REDUCE:   'VAULT_REDUCE',   // reduce vault target by flat amount
+  SKIM_BOOST:     'SKIM_BOOST',     // permanent +5% skim rate
+  EXTRA_HAND:     'EXTRA_HAND',     // +1 hand next round
+} as const;
+
+export type BountyRewardType = typeof BountyReward[keyof typeof BountyReward];
+
+export interface Bounty {
+  id: string;
+  title: string;
+  description: string;
+  condition: BountyConditionType;
+  conditionValue: number;  // rank threshold, skim %, hands remaining, chip threshold
+  reward: BountyRewardType;
+  rewardValue: number;
+  rewardLabel: string;
+  accepted: boolean;
+  completed: boolean;
+}
+
+// @ts-ignore
+function makeBounty(
+  id: string,
+  title: string,
+  desc: string,
+  condition: BountyConditionType,
+  conditionValue: number,
+  reward: BountyRewardType,
+  rewardValue: number,
+  rewardLabel: string,
+): Bounty {
+  return { id, title, description: desc, condition, conditionValue, reward, rewardValue, rewardLabel, accepted: false, completed: false };
+}
+
+const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
+  {
+    title: 'High Roller',
+    description: 'Play a Flush or better this round.',
+    condition: BountyCondition.PLAY_HAND_RANK,
+    conditionValue: HandRank.FLUSH,
+    reward: BountyReward.CHIPS,
+    rewardValue: 80,
+    rewardLabel: '+80 chips',
+  },
+  {
+    title: 'Full Send',
+    description: 'Play a Full House or better this round.',
+    condition: BountyCondition.PLAY_HAND_RANK,
+    conditionValue: HandRank.FULL_HOUSE,
+    reward: BountyReward.CHIPS,
+    rewardValue: 120,
+    rewardLabel: '+120 chips',
+  },
+  {
+    title: 'Royal Treatment',
+    description: 'Play a Four of a Kind or better.',
+    condition: BountyCondition.PLAY_HAND_RANK,
+    conditionValue: HandRank.FOUR_OF_A_KIND,
+    reward: BountyReward.CHIPS,
+    rewardValue: 200,
+    rewardLabel: '+200 chips',
+  },
+  {
+    title: 'The Straight',
+    description: 'Play a Straight or better this round.',
+    condition: BountyCondition.PLAY_HAND_RANK,
+    conditionValue: HandRank.STRAIGHT,
+    reward: BountyReward.VAULT_REDUCE,
+    rewardValue: 40,
+    rewardLabel: 'Vault −40',
+  },
+  {
+    title: 'Honest Work',
+    description: 'Keep your skim rate under 15% at round end.',
+    condition: BountyCondition.KEEP_SKIM_UNDER,
+    conditionValue: 15,
+    reward: BountyReward.CHIPS,
+    rewardValue: 100,
+    rewardLabel: '+100 chips',
+  },
+  {
+    title: 'Efficient',
+    description: 'Fill the vault with 3 or more hands remaining.',
+    condition: BountyCondition.HANDS_REMAINING,
+    conditionValue: 3,
+    reward: BountyReward.EXTRA_HAND,
+    rewardValue: 1,
+    rewardLabel: '+1 hand next round',
+  },
+  {
+    title: 'Speed Run',
+    description: 'Fill the vault with 5 or more hands remaining.',
+    condition: BountyCondition.HANDS_REMAINING,
+    conditionValue: 5,
+    reward: BountyReward.CHIPS,
+    rewardValue: 150,
+    rewardLabel: '+150 chips',
+  },
+  {
+    title: 'Lucky Break',
+    description: 'Use a consumable this round.',
+    condition: BountyCondition.USE_CONSUMABLE,
+    conditionValue: 1,
+    reward: BountyReward.CHIPS,
+    rewardValue: 50,
+    rewardLabel: '+50 chips',
+  },
+  {
+    title: 'Steady Hands',
+    description: "Don't discard any hands this round.",
+    condition: BountyCondition.NO_DISCARD,
+    conditionValue: 0,
+    reward: BountyReward.VAULT_REDUCE,
+    rewardValue: 30,
+    rewardLabel: 'Vault −30',
+  },
+  {
+    title: 'Big Hand',
+    description: 'Score 250 or more chips in a single hand.',
+    condition: BountyCondition.SCORE_IN_ONE,
+    conditionValue: 250,
+    reward: BountyReward.SKIM_BOOST,
+    rewardValue: 5,
+    rewardLabel: 'Skim +5%',
+  },
+];
+
+export function generateBounties(round: number): Bounty[] {
+  const pool = round === 1
+    ? BOUNTY_POOL.filter(b => b.condition !== BountyCondition.PLAY_HAND_RANK || b.conditionValue <= HandRank.FLUSH)
+    : BOUNTY_POOL;
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, 3).map((b, i) => ({ ...b, id: `bounty-${round}-${i}`, accepted: false, completed: false }));
+}
+
+export function checkBountyCondition(
+  bounty: Bounty,
+  context: {
+    handRank?: HandRankValue;
+    handScore?: number;
+    skimRate?: number;
+    handsRemaining?: number;
+    usedConsumable?: boolean;
+    discarded?: boolean;
+    vaultFilled?: boolean;
+  }
+): boolean {
+  if (!bounty.accepted || bounty.completed) return false;
+
+  switch (bounty.condition) {
+    case BountyCondition.PLAY_HAND_RANK:
+      return (context.handRank ?? 0) >= bounty.conditionValue;
+
+    case BountyCondition.SCORE_IN_ONE:
+      return (context.handScore ?? 0) >= bounty.conditionValue;
+
+    case BountyCondition.USE_CONSUMABLE:
+      return context.usedConsumable === true;
+
+    case BountyCondition.KEEP_SKIM_UNDER:
+      return context.vaultFilled === true && (context.skimRate ?? 100) * 100 < bounty.conditionValue;
+
+    case BountyCondition.HANDS_REMAINING:
+      return context.vaultFilled === true && (context.handsRemaining ?? 0) >= bounty.conditionValue;
+
+    case BountyCondition.NO_DISCARD:
+      return context.vaultFilled === true && context.discarded === false;
+
+    default:
+      return false;
+  }
+}

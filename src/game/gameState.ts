@@ -4,8 +4,10 @@ import { evaluateHand } from './hands';
 import { chipValue } from './scoring';
 import { ConsumableType, rollScratchMultiplier } from './consumables';
 import type { ConsumableTypeValue } from './consumables';
-import { ChipType, applyChips, bonusHandsFromChips } from './chips';
+import { ChipType, applyChips, bonusHandsFromChips, CHIPS } from './chips';
 import type { ChipTypeValue } from './chips';
+import { generateBounties, checkBountyCondition, BountyReward } from './bounties';
+import type { Bounty } from './bounties';
 
 export type Difficulty = 'easy' | 'normal' | 'hard';
 
@@ -32,6 +34,7 @@ export interface ShopItem {
   type: 'consumable' | 'skim-upgrade' | 'chip';
   consumableType?: ConsumableTypeValue;
   chipType?: ChipTypeValue;
+  rarity?: string;
 }
 
 export interface RoundResult {
@@ -70,10 +73,17 @@ export interface GameState {
   rouletteWins: number;
   handSize: number;
   difficulty: Difficulty;
+  availableBounties: Bounty[];
+  activeBounties: Bounty[];
+  usedConsumableThisRound: boolean;
+  discardedThisRound: boolean;
+  bestHandScoreThisRound: number;
+  bestHandRankThisRound: number;
 }
 
 export type GameAction =
   | { type: 'SET_DIFFICULTY'; difficulty: Difficulty }
+  | { type: 'ACCEPT_BOUNTY'; bountyId: string }
   | { type: 'DEAL' }
   | { type: 'SELECT_CARD'; id: string }
   | { type: 'PLAY_HAND' }
@@ -92,7 +102,7 @@ const MAX_CONSUMABLES = 4;
 const MAX_CHIPS = 5;
 const COMMUNITY_COUNT = 3;
 
-function generateShop(_held: ConsumableTypeValue[], chipStack: ChipTypeValue[]): ShopItem[] {
+function generateShop(_held: ConsumableTypeValue[], chipStack: ChipTypeValue[], round = 1): ShopItem[] {
   const items: ShopItem[] = [];
 
   // 2 random consumables
@@ -121,34 +131,22 @@ function generateShop(_held: ConsumableTypeValue[], chipStack: ChipTypeValue[]):
     });
   }
 
-  // 2 random chips (prefer ones not yet owned)
+  // Rarity-weighted chip offers (3 chips)
   const allChips = Object.values(ChipType);
   const unowned = allChips.filter(ch => !chipStack.includes(ch));
-  const chipPool = unowned.length >= 2 ? unowned : allChips;
-  const shuffledCh = [...chipPool].sort(() => Math.random() - 0.5).slice(0, 2);
-  for (const ch of shuffledCh) {
-    const costs: Record<ChipTypeValue, number> = {
-      RED: 40, BLUE: 60, BLACK: 80, GOLD: 100, LUCKY: 50, SILVER: 70,
-    };
-    const names: Record<ChipTypeValue, string> = {
-      RED: 'Red Chip', BLUE: 'Blue Chip', BLACK: 'Black Chip', GOLD: 'Gold Chip', LUCKY: 'Lucky Chip', SILVER: 'Silver Chip',
-    };
-    const descs: Record<ChipTypeValue, string> = {
-      RED: '+15 to every hand',
-      BLUE: 'Pairs+ score ×1.2',
-      BLACK: 'Once/round: double your skim',
-      GOLD: 'Every 5th hand: +80 vault bonus',
-      LUCKY: 'Random +10–50 per hand',
-      SILVER: '+1 hand per round',
-    };
-    items.push({
-      id: `shop-ch-${ch}-${Date.now()}-${Math.random()}`,
-      label: names[ch],
-      description: descs[ch],
-      cost: costs[ch],
-      type: 'chip',
-      chipType: ch,
-    });
+  const rarityWeight: Record<string, number> = { common: 4, uncommon: 2, rare: 1.2, legendary: round < 2 ? 0 : 0.3 };
+  const weightedPool = (unowned.length >= 2 ? unowned : allChips).map(ch => ({ ch, weight: rarityWeight[CHIPS[ch].rarity] ?? 1 }));
+  const pickedChips: ChipTypeValue[] = [];
+  for (let i = 0; i < 3 && weightedPool.length > 0; i++) {
+    const totalW = weightedPool.reduce((s, x) => s + x.weight, 0);
+    let r = Math.random() * totalW;
+    const idx = Math.max(0, weightedPool.findIndex(x => { r -= x.weight; return r <= 0; }));
+    const pick = weightedPool.splice(idx, 1)[0];
+    pickedChips.push(pick.ch);
+  }
+  for (const ch of pickedChips) {
+    const chip = CHIPS[ch];
+    items.push({ id: `shop-ch-${ch}-${Date.now()}-${Math.random()}`, label: chip.name, description: chip.description, cost: chip.cost, type: 'chip', chipType: ch });
   }
 
   // Skim upgrade
@@ -191,6 +189,12 @@ export const initialState: GameState = {
   handSize: HAND_SIZE,
   consumableResult: null,
   difficulty: 'normal',
+  availableBounties: [],
+  activeBounties: [],
+  usedConsumableThisRound: false,
+  discardedThisRound: false,
+  bestHandScoreThisRound: 0,
+  bestHandRankThisRound: 0,
 };
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -201,6 +205,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         difficulty: action.difficulty,
         maxHandsPerRound: base,
+        availableBounties: generateBounties(1),
         phase: 'dealing',
       };
     }
@@ -223,11 +228,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         roundChips: 0,
         handsPlayedThisRound: 0,
         blackChipUsedThisRound: false,
+        usedConsumableThisRound: false,
+        discardedThisRound: false,
+        bestHandScoreThisRound: 0,
+        bestHandRankThisRound: 0,
         lastScore: null,
         lastHandName: null,
         lastBonusDetail: null,
         scratchMultiplier: 1,
         maxHandsPerRound: base + bonus,
+        activeBounties: state.availableBounties.filter(b => b.accepted),
       };
     }
 
@@ -254,6 +264,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         deck: newDeck,
         selectedIds: [],
         handsPlayedThisRound: newHandsPlayed,
+        discardedThisRound: true,
         phase: outOfHands ? 'round-end' : 'selecting',
       };
     }
@@ -281,7 +292,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // Skim split
       const effectiveSkimRate = bonuses.skimDoubled ? Math.min(0.9, state.skimRate * 2) : state.skimRate;
       const skimmed = Math.floor(total * effectiveSkimRate);
-      const vaultChips = total - skimmed + bonuses.vaultBonus;
+      // Diamond chip: skim also feeds vault at 50%
+      const diamondBonus = bonuses.diamondActive ? Math.floor(skimmed * 0.5) : 0;
+      const vaultChips = total - skimmed + bonuses.vaultBonus + diamondBonus;
 
       const newVault = state.vault + vaultChips;
       const newPersonal = state.personalChips + skimmed;
@@ -293,6 +306,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (bonuses.multiplier > 1) bonusParts.push(`×${bonuses.multiplier.toFixed(1)}`);
       if (bonuses.skimDoubled) bonusParts.push('skim ×2!');
       if (bonuses.vaultBonus > 0) bonusParts.push(`+${bonuses.vaultBonus} vault bonus!`);
+      if (bonuses.diamondActive && diamondBonus > 0) bonusParts.push(`💎 +${diamondBonus} to vault`);
+
+      // Check per-hand bounties
+      const updatedBounties = state.activeBounties.map(b => {
+        if (b.completed) return b;
+        const done = checkBountyCondition(b, { handRank: handResult.rank, handScore: total });
+        return done ? { ...b, completed: true } : b;
+      });
 
       // Refill hand (only private hand cards get replaced, not community)
       const playedFromHand = state.hand.filter(c => state.selectedIds.includes(c.id));
@@ -321,6 +342,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         scratchMultiplier: 1,
         blackChipUsedThisRound: bonuses.skimDoubled ? true : state.blackChipUsedThisRound,
         handsPlayedThisRound: newHandsPlayed,
+        bestHandScoreThisRound: Math.max(state.bestHandScoreThisRound, total),
+        bestHandRankThisRound: Math.max(state.bestHandRankThisRound, handResult.rank),
+        activeBounties: updatedBounties,
         lastScore: total,
         lastHandName: handResult.name,
         lastBonusDetail: bonusParts.length > 0 ? bonusParts.join(' · ') : null,
@@ -332,6 +356,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!state.consumables.includes(consumable)) return state;
       const newConsumables = [...state.consumables];
       newConsumables.splice(newConsumables.indexOf(consumable), 1);
+      // Check use-consumable bounties
+      const bountiesAfterConsumable = state.activeBounties.map(b =>
+        !b.completed && checkBountyCondition(b, { usedConsumable: true })
+          ? { ...b, completed: true } : b
+      );
 
       if (consumable === ConsumableType.SCRATCH_TICKET) {
         const mult = rollScratchMultiplier();
@@ -339,6 +368,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ...state,
           consumables: newConsumables,
           scratchMultiplier: mult,
+          usedConsumableThisRound: true,
+          activeBounties: bountiesAfterConsumable,
           consumableResult: {
             title: '🎫 Scratch Ticket',
             message: mult === 1
@@ -356,6 +387,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           consumables: newConsumables,
           hand: [...state.hand, ...drawn],
           deck: newDeck,
+          usedConsumableThisRound: true,
+          activeBounties: bountiesAfterConsumable,
           consumableResult: {
             title: '🃏 High Card Draw',
             message: drawn.length === 0
@@ -377,13 +410,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           consumables: newConsumables,
           handsPlayedThisRound: state.handsPlayedThisRound + 1,
           scratchMultiplier: 3,
+          usedConsumableThisRound: true,
+          activeBounties: bountiesAfterConsumable,
           consumableResult: {
             title: '🔥 Burned Hand',
             message: 'One hand sacrificed to the fire. Your next hand scores ×3.',
           },
         };
       }
-      return { ...state, consumables: newConsumables };
+      return { ...state, consumables: newConsumables, usedConsumableThisRound: true, activeBounties: bountiesAfterConsumable };
     }
 
     case 'ROULETTE_BET': {
@@ -432,16 +467,53 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'NEXT_ROUND': {
       const vaultFilled = state.vault >= state.vaultTarget;
       const vaultPct = Math.min(100, Math.floor((state.vault / state.vaultTarget) * 100));
+      const handsRemaining = state.maxHandsPerRound - state.handsPlayedThisRound;
       const result: RoundResult = { round: state.round, vaultFilled, vaultPct, personalChips: state.roundChips, skimRate: state.skimRate };
+
+      // Check end-of-round bounties and apply rewards
+      const endCtx = {
+        vaultFilled,
+        skimRate: state.skimRate,
+        handsRemaining,
+        discarded: state.discardedThisRound,
+      };
+      let bonusChips = 0;
+      let vaultReduction = 0;
+      let skimBoost = 0;
+      let extraHand = 0;
+      const resolvedBounties = state.activeBounties.map(b => {
+        const done = b.completed || checkBountyCondition(b, endCtx);
+        if (done && !b.completed) {
+          if (b.reward === BountyReward.CHIPS) bonusChips += b.rewardValue;
+          if (b.reward === BountyReward.VAULT_REDUCE) vaultReduction += b.rewardValue;
+          if (b.reward === BountyReward.SKIM_BOOST) skimBoost += b.rewardValue / 100;
+          if (b.reward === BountyReward.EXTRA_HAND) extraHand += b.rewardValue;
+        }
+        return done ? { ...b, completed: true } : b;
+      });
+
       if (!vaultFilled) {
-        return { ...state, phase: 'game-over', roundHistory: [...state.roundHistory, result] };
+        return { ...state, phase: 'game-over', roundHistory: [...state.roundHistory, result], activeBounties: resolvedBounties };
       }
+
+      const newBounties = generateBounties(state.round + 1);
       return {
         ...state,
         phase: 'shop',
-        shopItems: generateShop(state.consumables, state.chipStack),
+        shopItems: generateShop(state.consumables, state.chipStack, state.round),
         roundHistory: [...state.roundHistory, result],
+        activeBounties: resolvedBounties,
+        availableBounties: newBounties,
+        personalChips: state.personalChips + bonusChips,
+        skimRate: Math.min(0.40, state.skimRate + skimBoost),
       };
+    }
+
+    case 'ACCEPT_BOUNTY': {
+      const updated = state.availableBounties.map(b =>
+        b.id === action.bountyId ? { ...b, accepted: !b.accepted } : b
+      );
+      return { ...state, availableBounties: updated };
     }
 
     case 'RESET':
