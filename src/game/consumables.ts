@@ -1,7 +1,8 @@
 export const ConsumableType = {
-  SCRATCH_TICKET: 'SCRATCH_TICKET',
-  HIGH_CARD_DRAW: 'HIGH_CARD_DRAW',
-  ROULETTE: 'ROULETTE',
+  SCRATCH_TICKET:  'SCRATCH_TICKET',
+  HIGH_CARD_DRAW:  'HIGH_CARD_DRAW',
+  ROULETTE:        'ROULETTE',
+  BURNED_HAND:     'BURNED_HAND',
 } as const;
 
 export type ConsumableTypeValue = typeof ConsumableType[keyof typeof ConsumableType];
@@ -31,6 +32,12 @@ export const CONSUMABLES: Record<ConsumableTypeValue, Consumable> = {
     name: 'Roulette',
     description: 'Bet up to 50 personal chips. Double or nothing.',
     icon: '🎰',
+  },
+  BURNED_HAND: {
+    type: ConsumableType.BURNED_HAND,
+    name: 'Burned Hand',
+    description: 'Sacrifice 1 hand. Your next hand scores ×3.',
+    icon: '🔥',
   },
 };
 

@@ -4,10 +4,19 @@ import { evaluateHand } from './hands';
 import { chipValue } from './scoring';
 import { ConsumableType, rollScratchMultiplier } from './consumables';
 import type { ConsumableTypeValue } from './consumables';
-import { ChipType, applyChips } from './chips';
+import { ChipType, applyChips, bonusHandsFromChips } from './chips';
 import type { ChipTypeValue } from './chips';
 
+export type Difficulty = 'easy' | 'normal' | 'hard';
+
+const HANDS_BY_DIFFICULTY: Record<Difficulty, number> = {
+  easy:   10,
+  normal:  8,
+  hard:    6,
+};
+
 export type GamePhase =
+  | 'difficulty'
   | 'dealing'
   | 'selecting'
   | 'shop'
@@ -60,12 +69,15 @@ export interface GameState {
   roundHistory: RoundResult[];
   rouletteWins: number;
   handSize: number;
+  difficulty: Difficulty;
 }
 
 export type GameAction =
+  | { type: 'SET_DIFFICULTY'; difficulty: Difficulty }
   | { type: 'DEAL' }
   | { type: 'SELECT_CARD'; id: string }
   | { type: 'PLAY_HAND' }
+  | { type: 'DISCARD_HAND' }
   | { type: 'USE_CONSUMABLE'; consumable: ConsumableTypeValue }
   | { type: 'ROULETTE_BET'; amount: number }
   | { type: 'DISMISS_RESULT' }
@@ -91,11 +103,13 @@ function generateShop(_held: ConsumableTypeValue[], chipStack: ChipTypeValue[]):
       SCRATCH_TICKET: 'Scratch Ticket',
       HIGH_CARD_DRAW: 'High Card Draw',
       ROULETTE: 'Roulette',
+      BURNED_HAND: 'Burned Hand',
     };
     const descs: Record<ConsumableTypeValue, string> = {
       SCRATCH_TICKET: 'x1–x5 multiplier on next hand',
       HIGH_CARD_DRAW: 'Draw 2 extra cards',
       ROULETTE: 'Bet up to 50 chips — double or nothing',
+      BURNED_HAND: 'Sacrifice 1 hand → next scores ×3',
     };
     items.push({
       id: `shop-c-${ct}-${Date.now()}-${Math.random()}`,
@@ -114,10 +128,10 @@ function generateShop(_held: ConsumableTypeValue[], chipStack: ChipTypeValue[]):
   const shuffledCh = [...chipPool].sort(() => Math.random() - 0.5).slice(0, 2);
   for (const ch of shuffledCh) {
     const costs: Record<ChipTypeValue, number> = {
-      RED: 40, BLUE: 60, BLACK: 80, GOLD: 100, LUCKY: 50,
+      RED: 40, BLUE: 60, BLACK: 80, GOLD: 100, LUCKY: 50, SILVER: 70,
     };
     const names: Record<ChipTypeValue, string> = {
-      RED: 'Red Chip', BLUE: 'Blue Chip', BLACK: 'Black Chip', GOLD: 'Gold Chip', LUCKY: 'Lucky Chip',
+      RED: 'Red Chip', BLUE: 'Blue Chip', BLACK: 'Black Chip', GOLD: 'Gold Chip', LUCKY: 'Lucky Chip', SILVER: 'Silver Chip',
     };
     const descs: Record<ChipTypeValue, string> = {
       RED: '+15 to every hand',
@@ -125,6 +139,7 @@ function generateShop(_held: ConsumableTypeValue[], chipStack: ChipTypeValue[]):
       BLACK: 'Once/round: double your skim',
       GOLD: 'Every 5th hand: +80 vault bonus',
       LUCKY: 'Random +10–50 per hand',
+      SILVER: '+1 hand per round',
     };
     items.push({
       id: `shop-ch-${ch}-${Date.now()}-${Math.random()}`,
@@ -149,7 +164,7 @@ function generateShop(_held: ConsumableTypeValue[], chipStack: ChipTypeValue[]):
 }
 
 export const initialState: GameState = {
-  phase: 'dealing',
+  phase: 'difficulty',
   deck: [],
   hand: [],
   communityCards: [],
@@ -175,15 +190,28 @@ export const initialState: GameState = {
   rouletteWins: 0,
   handSize: HAND_SIZE,
   consumableResult: null,
+  difficulty: 'normal',
 };
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
+    case 'SET_DIFFICULTY': {
+      const base = HANDS_BY_DIFFICULTY[action.difficulty];
+      return {
+        ...state,
+        difficulty: action.difficulty,
+        maxHandsPerRound: base,
+        phase: 'dealing',
+      };
+    }
+
     case 'DEAL': {
       const deck = shuffle(createDeck());
       const community = deck.slice(0, COMMUNITY_COUNT);
       const hand = deck.slice(COMMUNITY_COUNT, COMMUNITY_COUNT + state.handSize);
       const remaining = deck.slice(COMMUNITY_COUNT + state.handSize);
+      const base = HANDS_BY_DIFFICULTY[state.difficulty];
+      const bonus = bonusHandsFromChips(state.chipStack);
       return {
         ...state,
         phase: 'selecting',
@@ -199,6 +227,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         lastHandName: null,
         lastBonusDetail: null,
         scratchMultiplier: 1,
+        maxHandsPerRound: base + bonus,
       };
     }
 
@@ -210,6 +239,23 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
       if (state.selectedIds.length >= 5) return state;
       return { ...state, selectedIds: [...state.selectedIds, id] };
+    }
+
+    case 'DISCARD_HAND': {
+      if (state.handsPlayedThisRound >= state.maxHandsPerRound) return state;
+      // Discard entire private hand and redraw, costs 1 hand
+      const newHand = state.deck.slice(0, state.handSize);
+      const newDeck = state.deck.slice(state.handSize);
+      const newHandsPlayed = state.handsPlayedThisRound + 1;
+      const outOfHands = newHandsPlayed >= state.maxHandsPerRound;
+      return {
+        ...state,
+        hand: newHand,
+        deck: newDeck,
+        selectedIds: [],
+        handsPlayedThisRound: newHandsPlayed,
+        phase: outOfHands ? 'round-end' : 'selecting',
+      };
     }
 
     case 'PLAY_HAND': {
@@ -315,6 +361,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             message: drawn.length === 0
               ? 'Deck is empty — no cards to draw.'
               : `Drew ${cardNames} into your hand.`,
+          },
+        };
+      }
+      if (consumable === ConsumableType.BURNED_HAND) {
+        const handsLeft = state.maxHandsPerRound - state.handsPlayedThisRound;
+        if (handsLeft <= 1) {
+          return {
+            ...state,
+            consumableResult: { title: '🔥 Burned Hand', message: "Can't burn your last hand!" },
+          };
+        }
+        return {
+          ...state,
+          consumables: newConsumables,
+          handsPlayedThisRound: state.handsPlayedThisRound + 1,
+          scratchMultiplier: 3,
+          consumableResult: {
+            title: '🔥 Burned Hand',
+            message: 'One hand sacrificed to the fire. Your next hand scores ×3.',
           },
         };
       }

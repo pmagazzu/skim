@@ -1,9 +1,10 @@
 export const ChipType = {
-  RED:   'RED',
-  BLUE:  'BLUE',
-  BLACK: 'BLACK',
-  GOLD:  'GOLD',
-  LUCKY: 'LUCKY',
+  RED:    'RED',
+  BLUE:   'BLUE',
+  BLACK:  'BLACK',
+  GOLD:   'GOLD',
+  LUCKY:  'LUCKY',
+  SILVER: 'SILVER',
 } as const;
 
 export type ChipTypeValue = typeof ChipType[keyof typeof ChipType];
@@ -12,8 +13,8 @@ export interface Chip {
   type: ChipTypeValue;
   name: string;
   description: string;
-  color: string;       // tailwind bg class
-  textColor: string;   // tailwind text class
+  color: string;
+  textColor: string;
   cost: number;
 }
 
@@ -58,22 +59,35 @@ export const CHIPS: Record<ChipTypeValue, Chip> = {
     textColor: 'text-purple-400',
     cost: 50,
   },
+  SILVER: {
+    type: ChipType.SILVER,
+    name: 'Silver Chip',
+    description: '+1 hand per round. More time at the table.',
+    color: 'bg-gray-400',
+    textColor: 'text-gray-300',
+    cost: 70,
+  },
 };
 
 export function getChip(type: ChipTypeValue): Chip {
   return CHIPS[type];
 }
 
+/** How many bonus hands does the chip stack grant? */
+export function bonusHandsFromChips(chips: ChipTypeValue[]): number {
+  return chips.filter(c => c === ChipType.SILVER).length;
+}
+
 export interface ChipBonusResult {
-  flatBonus: number;       // added to chips
-  multiplier: number;      // applied after flat
-  skimDoubled: boolean;    // black chip effect
-  vaultBonus: number;      // gold chip vault bonus
+  flatBonus: number;
+  multiplier: number;
+  skimDoubled: boolean;
+  vaultBonus: number;
 }
 
 export function applyChips(
   chips: ChipTypeValue[],
-  handRankValue: number,  // 1-10
+  handRankValue: number,
   handsPlayedThisRound: number,
   blackChipUsed: boolean,
 ): ChipBonusResult {
@@ -98,6 +112,9 @@ export function applyChips(
         break;
       case ChipType.LUCKY:
         flatBonus += 10 + Math.floor(Math.random() * 41);
+        break;
+      case ChipType.SILVER:
+        // Handled at deal time via bonusHandsFromChips
         break;
     }
   }

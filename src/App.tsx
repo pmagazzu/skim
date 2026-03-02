@@ -61,6 +61,30 @@ function App() {
 
       <main className="flex-1 flex flex-col items-center justify-center p-4 gap-6">
 
+        {/* DIFFICULTY SELECT */}
+        {state.phase === 'difficulty' && (
+          <div className="flex flex-col items-center gap-8 max-w-sm text-center">
+            <div className="title-font text-4xl gold-glow tracking-widest">SKIM</div>
+            <p className="text-gray-500 text-sm">Fill the vault. Take your cut. Try not to get caught.</p>
+            <div className="flex flex-col gap-3 w-full">
+              {(['easy', 'normal', 'hard'] as const).map(d => {
+                const labels = { easy: '🟢 EASY', normal: '🟡 NORMAL', hard: '🔴 HARD' };
+                const descs = { easy: '10 hands · More time, lower pressure', normal: '8 hands · Balanced challenge', hard: '6 hands · Every hand counts' };
+                return (
+                  <button
+                    key={d}
+                    onClick={() => dispatch({ type: 'SET_DIFFICULTY', difficulty: d })}
+                    className="shop-card text-left hover:border-amber-600 cursor-pointer transition-all"
+                  >
+                    <div className="text-amber-200 font-bold mb-1">{labels[d]}</div>
+                    <div className="text-gray-500 text-sm">{descs[d]}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* DEALING */}
         {state.phase === 'dealing' && (
           <div className="flex flex-col items-center gap-8">
@@ -111,9 +135,11 @@ function App() {
                 selectedIds={state.selectedIds}
                 onSelect={id => dispatch({ type: 'SELECT_CARD', id })}
                 onPlay={() => dispatch({ type: 'PLAY_HAND' })}
+                onDiscard={() => dispatch({ type: 'DISCARD_HAND' })}
                 handResult={selectedHandResult}
                 chipPreview={selectedChipValue}
                 scratchMultiplier={state.scratchMultiplier}
+                handsLeft={state.maxHandsPerRound - state.handsPlayedThisRound}
               />
             </div>
 

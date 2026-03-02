@@ -13,11 +13,13 @@ const ITEM_ICONS: Record<string, string> = {
   'consumable-SCRATCH_TICKET': '🎫',
   'consumable-HIGH_CARD_DRAW': '🃏',
   'consumable-ROULETTE': '🎰',
+  'consumable-BURNED_HAND': '🔥',
   'chip-RED': '🔴',
   'chip-BLUE': '🔵',
   'chip-BLACK': '⚫',
   'chip-GOLD': '🟡',
   'chip-LUCKY': '🟣',
+  'chip-SILVER': '⚪',
   'skim-upgrade': '📈',
 };
 
