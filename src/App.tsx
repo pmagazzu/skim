@@ -7,6 +7,7 @@ import { Consumables } from './components/Consumables';
 import { ChipStack } from './components/ChipStack';
 import { Shop } from './components/Shop';
 import { SkimReport } from './components/SkimReport';
+import { ResultModal } from './components/ResultModal';
 import { ConsumableResult } from './components/ConsumableResult';
 
 function App() {
@@ -218,6 +219,15 @@ function App() {
           </div>
         )}
       </main>
+
+      {/* Consumable result modal */}
+      {state.consumableResult && (
+        <ResultModal
+          title={state.consumableResult.title}
+          message={state.consumableResult.message}
+          onDismiss={() => dispatch({ type: 'DISMISS_RESULT' })}
+        />
+      )}
     </div>
   );
 }

@@ -19,23 +19,24 @@ export function ChipStack({ chips, blackChipUsed }: ChipStackProps) {
         {chips.map((type, i) => {
           const chip = getChip(type);
           const dimmed = type === 'BLACK' && blackChipUsed;
+          const isHovered = hovered === i;
           return (
             <div key={i} className="relative">
               <div
                 onMouseEnter={() => setHovered(i)}
                 onMouseLeave={() => setHovered(null)}
                 className={[
-                  'chip-token transition-opacity cursor-default',
+                  'chip-token cursor-help transition-opacity',
                   chip.color,
                   dimmed ? 'opacity-30' : 'opacity-100',
                 ].join(' ')}
               >
                 {type[0]}
               </div>
-              {hovered === i && (
-                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10 w-44 bg-[#1a1410] border border-amber-800/40 rounded-xl p-2 shadow-xl pointer-events-none">
-                  <div className={['text-xs font-bold mb-0.5', chip.textColor].join(' ')}>{chip.name}</div>
-                  <div className="text-gray-400 text-xs leading-snug">{chip.description}</div>
+              {isHovered && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 w-44 bg-[#1a1410] border border-amber-800/50 rounded-lg p-2 shadow-xl pointer-events-none">
+                  <div className="text-amber-300 text-xs font-bold mb-1">{chip.name}</div>
+                  <div className="text-gray-400 text-xs leading-relaxed">{chip.description}</div>
                   {dimmed && <div className="text-gray-600 text-xs mt-1 italic">Used this round</div>}
                 </div>
               )}
