@@ -1,6 +1,19 @@
+import { useState, useMemo } from 'react';
 import { Card } from './Card';
 import type { Card as CardType } from '../game/deck';
 import type { HandResult } from '../game/hands';
+
+type SortMode = 'dealt' | 'high' | 'low' | 'suit';
+
+const SUIT_ORDER: Record<string, number> = { spades: 0, hearts: 1, diamonds: 2, clubs: 3 };
+
+function sortCards(cards: CardType[], mode: SortMode): CardType[] {
+  const c = [...cards];
+  if (mode === 'high') return c.sort((a, b) => b.rank - a.rank);
+  if (mode === 'low')  return c.sort((a, b) => a.rank - b.rank);
+  if (mode === 'suit') return c.sort((a, b) => SUIT_ORDER[a.suit] - SUIT_ORDER[b.suit] || b.rank - a.rank);
+  return c; // 'dealt' = original order
+}
 
 interface HandProps {
   hand: CardType[];
@@ -18,12 +31,39 @@ interface HandProps {
 export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResult, chipPreview, disabled, scratchMultiplier, handsLeft }: HandProps) {
   const canPlay = selectedIds.length >= 1 && selectedIds.length <= 5 && !disabled;
   const canDiscard = !disabled && handsLeft > 1;
+  const [sortMode, setSortMode] = useState<SortMode>('dealt');
+
+  const sortedHand = useMemo(() => sortCards(hand, sortMode), [hand, sortMode]);
+
+  const SORT_OPTIONS: { mode: SortMode; label: string }[] = [
+    { mode: 'dealt', label: 'Dealt' },
+    { mode: 'high',  label: 'High→Low' },
+    { mode: 'low',   label: 'Low→High' },
+    { mode: 'suit',  label: 'Suit' },
+  ];
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="section-label">Your Hand</div>
+      {/* Sort controls */}
+      <div className="flex items-center gap-1">
+        <span className="section-label mr-2">Sort:</span>
+        {SORT_OPTIONS.map(o => (
+          <button
+            key={o.mode}
+            onClick={() => setSortMode(o.mode)}
+            className={[
+              'text-xs px-2 py-1 rounded transition-all',
+              sortMode === o.mode
+                ? 'bg-amber-800/60 text-amber-300 border border-amber-700'
+                : 'text-gray-600 hover:text-gray-400 border border-transparent',
+            ].join(' ')}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
       <div className="flex gap-2 flex-wrap justify-center">
-        {hand.map((card, i) => (
+        {sortedHand.map((card, i) => (
           <Card
             key={card.id}
             card={card}
