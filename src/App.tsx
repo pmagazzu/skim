@@ -130,6 +130,8 @@ function App() {
               cards={state.communityCards}
               selectedIds={state.selectedIds}
               onSelect={id => dispatch({ type: 'SELECT_CARD', id })}
+              deckCount={state.deck.length}
+              newCardIds={state.newCommunityIds}
             />
 
             {/* Felt / hand area */}
@@ -178,8 +180,7 @@ function App() {
               </div>
             )}
 
-            <div className="flex justify-center gap-6 section-label">
-              <span>{state.deck.length} cards left</span>
+            <div className="flex justify-center gap-4 section-label">
               <span className={state.handsPlayedThisRound >= state.maxHandsPerRound - 2 ? 'text-red-600' : ''}>
                 {state.maxHandsPerRound - state.handsPlayedThisRound} hands remaining
               </span>

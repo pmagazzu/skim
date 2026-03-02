@@ -79,6 +79,7 @@ export interface GameState {
   discardedThisRound: boolean;
   bestHandScoreThisRound: number;
   bestHandRankThisRound: number;
+  newCommunityIds: string[];  // just-drawn community cards (for flash animation)
 }
 
 export type GameAction =
@@ -195,6 +196,7 @@ export const initialState: GameState = {
   discardedThisRound: false,
   bestHandScoreThisRound: 0,
   bestHandRankThisRound: 0,
+  newCommunityIds: [],
 };
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -237,6 +239,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         lastBonusDetail: null,
         scratchMultiplier: 1,
         maxHandsPerRound: base + bonus,
+        newCommunityIds: [],
         activeBounties: state.availableBounties.filter(b => b.accepted),
       };
     }
@@ -253,18 +256,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'DISCARD_HAND': {
       if (state.handsPlayedThisRound >= state.maxHandsPerRound) return state;
-      // Discard entire private hand and redraw, costs 1 hand
+      // Discard entire private hand + leftmost community card, redraw both
       const newHand = state.deck.slice(0, state.handSize);
-      const newDeck = state.deck.slice(state.handSize);
+      let deckAfterDiscard = state.deck.slice(state.handSize);
+      // Cycle leftmost community card
+      const newCommunityCard = deckAfterDiscard[0] ? [deckAfterDiscard[0]] : [];
+      deckAfterDiscard = deckAfterDiscard.slice(1);
+      const newCommunity = [...state.communityCards.slice(1), ...newCommunityCard];
       const newHandsPlayed = state.handsPlayedThisRound + 1;
       const outOfHands = newHandsPlayed >= state.maxHandsPerRound;
       return {
         ...state,
         hand: newHand,
-        deck: newDeck,
+        communityCards: newCommunity,
+        deck: deckAfterDiscard,
         selectedIds: [],
         handsPlayedThisRound: newHandsPlayed,
         discardedThisRound: true,
+        newCommunityIds: newCommunityCard.map(c => c.id),
         phase: outOfHands ? 'round-end' : 'selecting',
       };
     }
@@ -318,15 +327,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // Refill hand (only private hand cards get replaced, not community)
       const playedFromHand = state.hand.filter(c => state.selectedIds.includes(c.id));
       const remainingHand = state.hand.filter(c => !state.selectedIds.includes(c.id));
-      const needed = playedFromHand.length;
-      const drawn = state.deck.slice(0, needed);
-      const newDeck = state.deck.slice(needed);
-      const newHand = [...remainingHand, ...drawn];
+      const handNeeded = playedFromHand.length;
+      const drawnForHand = state.deck.slice(0, handNeeded);
+      let deckAfterHand = state.deck.slice(handNeeded);
+      const newHand = [...remainingHand, ...drawnForHand];
+
+      // Replace used community cards
+      const usedCommunityCards = state.communityCards.filter(c => state.selectedIds.includes(c.id));
+      const remainingCommunity = state.communityCards.filter(c => !state.selectedIds.includes(c.id));
+      const communityReplacements = deckAfterHand.slice(0, usedCommunityCards.length);
+      deckAfterHand = deckAfterHand.slice(usedCommunityCards.length);
+      const newCommunity = [...remainingCommunity, ...communityReplacements];
+      const newCommunityIds = communityReplacements.map(c => c.id);
+
+      const newDeck = deckAfterHand;
 
       const newHandsPlayed = state.handsPlayedThisRound + 1;
       const vaultFilled = newVault >= state.vaultTarget;
       const outOfHands = newHandsPlayed >= state.maxHandsPerRound;
-      const deckEmpty = newDeck.length === 0 && newHand.length < state.handSize;
+      const deckEmpty = newDeck.length === 0 && newHand.length === 0;
       let phase: GamePhase = 'selecting';
       if (vaultFilled || deckEmpty || outOfHands) phase = 'round-end';
 
@@ -337,9 +356,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         personalChips: newPersonal,
         roundChips: newRoundChips,
         hand: newHand,
+        communityCards: newCommunity,
         deck: newDeck,
         selectedIds: [],
         scratchMultiplier: 1,
+        newCommunityIds,
         blackChipUsedThisRound: bonuses.skimDoubled ? true : state.blackChipUsedThisRound,
         handsPlayedThisRound: newHandsPlayed,
         bestHandScoreThisRound: Math.max(state.bestHandScoreThisRound, total),
