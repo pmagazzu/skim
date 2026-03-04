@@ -1,23 +1,46 @@
-import { useState, useRef } from 'react';
-import { getChip } from '../game/chips';
+import { useRef, useState, useEffect } from 'react';
+import { getChip, RARITY_COLORS, RARITY_LABELS } from '../game/chips';
 import type { ChipTypeValue } from '../game/chips';
+import { ChipArt } from './ChipArt';
+
+import { TIP_BONUS_MAP } from '../game/gameState';
 
 interface ChipStackProps {
   chips: ChipTypeValue[];
   blackChipUsed: boolean;
+  lastFiredChips?: string[];
+  canTip?: boolean;
   onReorder: (from: number, to: number) => void;
+  onTipChip?: (index: number) => void;
 }
 
-const CHIP_BG: Record<string, string> = {
-  RED: 'bg-red-600', BLUE: 'bg-blue-600', BLACK: 'bg-gray-800',
-  GOLD: 'bg-yellow-500', LUCKY: 'bg-purple-600', SILVER: 'bg-gray-400', DIAMOND: 'bg-cyan-300',
-};
-
-export function ChipStack({ chips, blackChipUsed, onReorder }: ChipStackProps) {
-  const [hovered, setHovered] = useState<number | null>(null);
+export function ChipStack({ chips, blackChipUsed, lastFiredChips = [], canTip = false, onReorder, onTipChip }: ChipStackProps) {
+  const [tooltip, setTooltip] = useState<number | null>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  const showTip = (i: number) => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    setTooltip(i);
+  };
+  const hideTip = () => {
+    hideTimer.current = setTimeout(() => setTooltip(null), 120);
+  };
+  const cancelHide = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+  };
   const [dragOver, setDragOver] = useState<number | null>(null);
+  const [fireCount, setFireCount] = useState(0);
   const dragNode = useRef<number | null>(null);
+  const prevFired = useRef<string[]>([]);
+
+  // Only increment fireCount when lastFiredChips actually changes (new hand scored)
+  useEffect(() => {
+    if (lastFiredChips.length > 0 && lastFiredChips !== prevFired.current) {
+      prevFired.current = lastFiredChips;
+      setFireCount(c => c + 1);
+    }
+  }, [lastFiredChips]);
 
   if (chips.length === 0) return null;
 
@@ -44,57 +67,74 @@ export function ChipStack({ chips, blackChipUsed, onReorder }: ChipStackProps) {
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center gap-2">
-        <div className="section-label">Chip Stack</div>
-        <div className="text-xs text-gray-700">drag to reorder · applied top→bottom</div>
-      </div>
-      <div className="flex gap-2 flex-wrap">
-        {chips.map((type, i) => {
-          const chip = getChip(type);
-          const dimmed = type === 'BLACK' && blackChipUsed;
-          const isDragging = dragIdx === i;
-          const isTarget = dragOver === i;
-          const bgClass = CHIP_BG[type] ?? 'bg-gray-600';
+    <div className="flex flex-row flex-wrap gap-2 items-center">
+      {chips.map((type, i) => {
+        const chip = getChip(type);
+        const dimmed = type === 'BLACK' && blackChipUsed;
+        const isDragging = dragIdx === i;
+        const isTarget = dragOver === i;
+        const fired = lastFiredChips.includes(type);
+        const rarityColor = chip.rarity ? (RARITY_COLORS[chip.rarity as keyof typeof RARITY_COLORS] ?? 'text-gray-400') : null;
+        const rarityLabel = chip.rarity ? (RARITY_LABELS[chip.rarity as keyof typeof RARITY_LABELS] ?? chip.rarity) : null;
+        const showTooltip = tooltip === i && !isDragging;
 
-          return (
-            <div
-              key={`${type}-${i}`}
-              className="relative"
-              onMouseEnter={() => setHovered(i)}
-              onMouseLeave={() => setHovered(null)}
-              draggable
-              onDragStart={() => handleDragStart(i)}
-              onDragEnter={() => handleDragEnter(i)}
-              onDragOver={e => { e.preventDefault(); handleDragEnter(i); }}
-              onDrop={() => handleDrop(i)}
-              onDragEnd={handleDragEnd}
-            >
-              {/* Position label */}
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs text-gray-700">{i + 1}</div>
-              <div
-                className={[
-                  'chip-token cursor-grab active:cursor-grabbing transition-all select-none',
-                  bgClass,
-                  dimmed ? 'opacity-30' : 'opacity-100',
-                  isDragging ? 'scale-110 opacity-70 ring-2 ring-white/30' : '',
-                  isTarget ? 'ring-2 ring-amber-400 scale-105' : '',
-                ].join(' ')}
-              >
-                {type[0]}
-              </div>
-              {hovered === i && !isDragging && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-20 w-48 bg-[#1a1410] border border-amber-800/50 rounded-lg p-2.5 shadow-xl pointer-events-none">
-                  <div className="text-amber-300 text-xs font-bold mb-1">{chip.name}</div>
-                  <div className="text-gray-400 text-xs leading-relaxed">{chip.description}</div>
-                  <div className="text-gray-600 text-xs mt-1.5">Position {i + 1} of {chips.length}</div>
-                  {dimmed && <div className="text-gray-600 text-xs italic">Used this round</div>}
-                </div>
-              )}
+        return (
+          <div
+            key={`${type}-${i}`}
+            className="relative"
+            onMouseEnter={() => showTip(i)}
+            onMouseLeave={hideTip}
+            onClick={() => setTooltip(tooltip === i ? null : i)}
+            draggable
+            onDragStart={() => handleDragStart(i)}
+            onDragEnter={() => handleDragEnter(i)}
+            onDragOver={e => { e.preventDefault(); handleDragEnter(i); }}
+            onDrop={() => handleDrop(i)}
+            onDragEnd={handleDragEnd}
+          >
+            <div className={[
+              'cursor-grab active:cursor-grabbing select-none transition-transform',
+              dimmed ? '' : 'hover:scale-110',
+              isDragging ? 'scale-110 opacity-60' : '',
+              isTarget ? 'ring-2 ring-amber-400 rounded-full' : '',
+            ].join(' ')}>
+              <ChipArt
+                type={type}
+                size={40}
+                dimmed={dimmed}
+                fired={fired}
+                fireKey={fired ? `fired-${i}-${fireCount}` : `${type}-${i}`}
+              />
             </div>
-          );
-        })}
-      </div>
+
+            {/* Tooltip */}
+            {showTooltip && (
+              <div className="absolute left-12 top-0 z-30 w-48 bg-[#1a1410] border border-amber-800/60 rounded-lg p-2.5 shadow-2xl" style={{ pointerEvents: 'auto' }} onMouseEnter={cancelHide} onMouseLeave={hideTip}>
+                <div className="text-amber-300 text-xs font-bold mb-0.5">{chip.name}</div>
+                {rarityLabel && rarityColor && (
+                  <div className={`text-xs font-semibold mb-1 ${rarityColor}`}>{rarityLabel}</div>
+                )}
+                <div className="text-gray-400 text-xs leading-relaxed">{chip.description}</div>
+                <div className="text-gray-600 text-xs mt-1.5">Slot {i + 1} of {chips.length} · fires left→right</div>
+                {dimmed && <div className="text-yellow-700 text-xs italic mt-1">Used this round</div>}
+                {canTip && onTipChip && (
+                  <div className="mt-2 border-t border-white/5 pt-2">
+                    <div className="text-orange-400 text-xs mb-1">
+                      🎯 Tip: {TIP_BONUS_MAP[type]?.label ?? '+30 chips next hand'}
+                    </div>
+                    <button
+                      onClick={e => { e.stopPropagation(); setTooltip(null); onTipChip(i); }}
+                      className="w-full text-xs py-1 px-2 rounded border border-orange-700 bg-orange-950/40 text-orange-300 hover:bg-orange-900/50 transition-colors"
+                    >
+                      SACRIFICE CHIP
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

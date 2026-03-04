@@ -1,6 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Card } from './Card';
 import type { Card as CardType } from '../game/deck';
+
+type SortMode = 'dealt' | 'high' | 'low' | 'suit';
+const SUIT_ORDER: Record<string, number> = { spades: 0, hearts: 1, diamonds: 2, clubs: 3 };
+function sortCards(cards: CardType[], mode: SortMode): CardType[] {
+  const c = [...cards];
+  if (mode === 'high') return c.sort((a, b) => b.rank - a.rank);
+  if (mode === 'low')  return c.sort((a, b) => a.rank - b.rank);
+  if (mode === 'suit') return c.sort((a, b) => SUIT_ORDER[a.suit] - SUIT_ORDER[b.suit] || b.rank - a.rank);
+  return c;
+}
 
 interface CommunityCardsProps {
   cards: CardType[];
@@ -10,13 +20,20 @@ interface CommunityCardsProps {
   deckCount: number;
   newCardIds: string[];
   onClearNew: () => void;
+  onDeckClick?: () => void;
+  sortMode?: SortMode;
 }
 
-function DeckPile({ count }: { count: number }) {
+function DeckPile({ count, onClick }: { count: number; onClick?: () => void }) {
   const piles = Math.min(4, Math.ceil(count / 10));
   return (
-    <div className="flex flex-col items-center gap-1 select-none">
-      <div className="relative w-10 h-14" title={`${count} cards remaining`}>
+    <div
+      className="flex flex-col items-center gap-1 select-none"
+      onClick={onClick}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
+      title={onClick ? `${count} cards remaining — click to view deck` : `${count} cards remaining`}
+    >
+      <div className="relative w-10 h-14" style={{ filter: onClick ? 'drop-shadow(0 0 4px rgba(202,138,4,0.4))' : 'none' }}>
         {Array.from({ length: piles }).map((_, i) => (
           <div
             key={i}
@@ -38,12 +55,14 @@ function DeckPile({ count }: { count: number }) {
   );
 }
 
-export function CommunityCards({ cards, selectedIds, onSelect, disabled, deckCount, newCardIds, onClearNew }: CommunityCardsProps) {
+export function CommunityCards({ cards, selectedIds, onSelect, disabled, deckCount, newCardIds, onClearNew, onDeckClick, sortMode }: CommunityCardsProps) {
   useEffect(() => {
     if (newCardIds.length === 0) return;
     const t = setTimeout(onClearNew, 3000);
     return () => clearTimeout(t);
   }, [newCardIds, onClearNew]);
+
+  const sortedCards = useMemo(() => sortCards(cards, sortMode ?? 'dealt'), [cards, sortMode]);
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="flex items-center gap-2">
@@ -53,7 +72,7 @@ export function CommunityCards({ cards, selectedIds, onSelect, disabled, deckCou
       <div className="flex items-center gap-3">
         {/* Cards */}
         <div className="flex gap-2 p-3 rounded-xl border border-amber-900/30 bg-black/20 relative">
-          {cards.map(card => {
+          {sortedCards.map(card => {
             const isNew = newCardIds.includes(card.id);
             return (
               <div key={card.id} className="relative">
@@ -84,7 +103,7 @@ export function CommunityCards({ cards, selectedIds, onSelect, disabled, deckCou
         {/* Arrow + deck pile */}
         <div className="flex items-center gap-2 text-gray-700">
           <span className="text-lg">←</span>
-          <DeckPile count={deckCount} />
+          <DeckPile count={deckCount} onClick={onDeckClick} />
         </div>
       </div>
     </div>

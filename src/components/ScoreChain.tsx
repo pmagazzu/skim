@@ -10,13 +10,9 @@ interface ScoreChainProps {
 }
 
 const CHIP_COLORS: Record<string, string> = {
-  RED:     'text-red-400',
-  BLUE:    'text-blue-400',
-  BLACK:   'text-gray-300',
-  GOLD:    'text-yellow-400',
-  LUCKY:   'text-purple-400',
-  SILVER:  'text-gray-400',
-  DIAMOND: 'text-cyan-300',
+  RED: '#f87171', BLUE: '#60a5fa', BLACK: '#d1d5db',
+  GOLD: '#fbbf24', LUCKY: '#c084fc', SILVER: '#9ca3af',
+  DIAMOND: '#67e8f9',
 };
 
 export function ScoreChain({ baseScore, handName, steps, finalScore, skimRate }: ScoreChainProps) {
@@ -24,52 +20,44 @@ export function ScoreChain({ baseScore, handName, steps, finalScore, skimRate }:
   const toVault = finalScore - skimmed;
 
   return (
-    <div className="bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col gap-2 text-sm w-full">
-      <div className="section-label mb-1">Scoring Chain</div>
-
-      {/* Base hand */}
-      <div className="flex justify-between items-center text-gray-400">
-        <span>{handName}</span>
-        <span className="font-bold chip-counter text-white">{baseScore}</span>
-      </div>
+    <div style={{
+      display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 6px',
+      padding: '5px 10px', borderRadius: 8,
+      background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.05)',
+      fontFamily: "'VT323',monospace", fontSize: 14,
+    }}>
+      {/* Hand name + base */}
+      <span style={{ color: '#d1d5db' }}>{handName}</span>
+      <span style={{ color: '#fbbf24', fontWeight: 700 }}>{baseScore}</span>
 
       {/* Chip steps */}
       {steps.map((step, i) => {
-        const color = CHIPS[step.chipType] ? CHIP_COLORS[step.chipType] : 'text-gray-400';
-        const isSpecial = step.skimDoubled || step.vaultBonus || step.diamondActive;
+        const isScratch = (step.chipType as string) === 'SCRATCH';
+        const color = isScratch ? '#fb923c' : (CHIP_COLORS[step.chipType] ?? '#9ca3af');
         return (
-          <div key={i} className={['flex justify-between items-center', color].join(' ')}>
-            <div className="flex items-center gap-2">
-              <span className="text-xs opacity-60">↳</span>
-              <span>{step.label}</span>
-              <span className="font-bold text-xs px-1.5 py-0.5 rounded bg-white/5">
-                {step.delta}
-              </span>
-            </div>
-            {isSpecial ? (
-              <span className="text-xs opacity-70 italic">
-                {step.skimDoubled && 'skim doubled!'}
-                {step.vaultBonus && `+${step.vaultBonus} vault`}
-                {step.diamondActive && 'skim→vault 50%'}
-              </span>
-            ) : (
-              <span className="font-bold chip-counter">{step.after}</span>
-            )}
-          </div>
+          <span key={i} className="score-step-in" style={{ animationDelay: `${i * 80}ms`, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+            <span style={{ color: '#4b5563' }}>›</span>
+            <span style={{ color }}>{step.label}</span>
+            <span style={{ color: '#fbbf24', fontWeight: 700 }}>{step.after}</span>
+          </span>
         );
       })}
 
-      {/* Divider + final */}
-      <div className="border-t border-white/5 pt-2 mt-1 flex justify-between items-center font-bold">
-        <span className="gold-glow">Total</span>
-        <span className="gold-glow chip-counter text-lg">{finalScore}</span>
-      </div>
+      {/* Final */}
+      <span style={{ color: '#4b5563', marginLeft: 2 }}>›</span>
+      <span
+        key={finalScore}
+        className="score-slam"
+        style={{ color: '#fde68a', fontWeight: 700, fontSize: 16, display: 'inline-block' }}
+      >
+        {finalScore}
+      </span>
 
       {/* Split */}
-      <div className="flex justify-between text-xs text-gray-500">
-        <span>→ Vault  <span className="text-emerald-500">{toVault}</span></span>
-        <span>→ You  <span className="text-amber-400">{skimmed}</span></span>
-      </div>
+      <span style={{ color: '#4b5563', fontSize: 12, marginLeft: 4 }}>
+        vault <span style={{ color: '#34d399' }}>{toVault}</span>
+        {' · '}you <span style={{ color: '#fbbf24' }}>{skimmed}</span>
+      </span>
     </div>
   );
 }

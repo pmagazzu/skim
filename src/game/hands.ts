@@ -47,8 +47,11 @@ function evaluate5(cards: Card[]): HandResult {
   const ranks = cards.map(c => c.rank).sort((a, b) => b - a);
   const suits = cards.map(c => c.suit);
   const isFlush = cards.length === 5 && suits.every(s => s === suits[0]);
-  const isStraight = ranks[0] - ranks[4] === 4 && new Set(ranks).size === 5;
-  const isAceLow = JSON.stringify(ranks) === JSON.stringify([14,5,4,3,2]);
+  // Straight: exactly 5 unique consecutive ranks. Guard ranks[4] against undefined (< 5 cards).
+  const isStraight = cards.length === 5 &&
+    ranks[0] - ranks[4] === 4 &&
+    new Set(ranks).size === 5;
+  const isAceLow = cards.length === 5 && JSON.stringify(ranks) === JSON.stringify([14,5,4,3,2]);
 
   const rankCounts: Record<number, number> = {};
   for (const r of ranks) rankCounts[r] = (rankCounts[r] || 0) + 1;
@@ -56,28 +59,46 @@ function evaluate5(cards: Card[]): HandResult {
 
   const resolvedStraight = isStraight || isAceLow;
 
+  // Sort cards by rank descending for hand-card extraction
+  const sortedCards = [...cards].sort((a, b) => b.rank - a.rank);
+
   let handRank: HandRankValue;
+  let handCards: Card[];
+
   if (isFlush && resolvedStraight) {
     handRank = ranks[0] === 14 && !isAceLow ? HandRank.ROYAL_FLUSH : HandRank.STRAIGHT_FLUSH;
+    handCards = sortedCards; // all 5
   } else if (counts[0] === 4) {
     handRank = HandRank.FOUR_OF_A_KIND;
+    const quadRank = Number(Object.entries(rankCounts).find(([, v]) => v === 4)![0]);
+    handCards = sortedCards.filter(c => c.rank === quadRank);
   } else if (counts[0] === 3 && counts[1] === 2) {
     handRank = HandRank.FULL_HOUSE;
+    handCards = sortedCards; // all 5
   } else if (isFlush) {
     handRank = HandRank.FLUSH;
+    handCards = sortedCards; // all 5
   } else if (resolvedStraight) {
     handRank = HandRank.STRAIGHT;
+    handCards = sortedCards; // all 5
   } else if (counts[0] === 3) {
     handRank = HandRank.THREE_OF_A_KIND;
+    const tripRank = Number(Object.entries(rankCounts).find(([, v]) => v === 3)![0]);
+    handCards = sortedCards.filter(c => c.rank === tripRank);
   } else if (counts[0] === 2 && counts[1] === 2) {
     handRank = HandRank.TWO_PAIR;
+    const pairRanks = Object.entries(rankCounts).filter(([, v]) => v === 2).map(([r]) => Number(r));
+    handCards = sortedCards.filter(c => pairRanks.includes(c.rank));
   } else if (counts[0] === 2) {
     handRank = HandRank.ONE_PAIR;
+    const pairRank = Number(Object.entries(rankCounts).find(([, v]) => v === 2)![0]);
+    handCards = sortedCards.filter(c => c.rank === pairRank);
   } else {
     handRank = HandRank.HIGH_CARD;
+    handCards = [sortedCards[0]]; // only the highest card
   }
 
-  return { rank: handRank, name: HAND_NAMES[handRank], cards };
+  return { rank: handRank, name: HAND_NAMES[handRank], cards: handCards };
 }
 
 export function evaluateHand(cards: Card[]): HandResult {

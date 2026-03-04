@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { Card } from './Card';
 import type { Card as CardType } from '../game/deck';
-import type { HandResult } from '../game/hands';
+import type { HandResult, HandRankValue } from '../game/hands';
+import { TurnPips } from './TurnPips';
 
 type SortMode = 'dealt' | 'high' | 'low' | 'suit';
 
@@ -26,13 +27,26 @@ interface HandProps {
   disabled?: boolean;
   scratchMultiplier: number;
   handsLeft: number;
+  handsPlayed: number;
+  maxHands: number;
+  vault: number;
+  vaultTarget: number;
+  turnTimeRemaining?: number | null;
   sortMode: SortMode;
   onSortChange: (mode: SortMode) => void;
+  discardsUsed: number;
+  maxFreeDiscards: number;
+  extraDiscardCost: number;
+  personalChips: number;
+  handLevels: Record<HandRankValue, number>;
 }
 
-export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResult, chipPreview, disabled, scratchMultiplier, handsLeft, sortMode, onSortChange }: HandProps) {
+export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResult, chipPreview, disabled, scratchMultiplier, handsLeft, handsPlayed, maxHands, vault, vaultTarget, turnTimeRemaining, sortMode, onSortChange, discardsUsed, maxFreeDiscards, extraDiscardCost, personalChips, handLevels }: HandProps) {
   const canPlay = selectedIds.length >= 1 && selectedIds.length <= 5 && !disabled;
-  const canDiscard = !disabled && handsLeft > 1;
+  const freeDiscardsLeft = Math.max(0, maxFreeDiscards - discardsUsed);
+  const isPaidDiscard = freeDiscardsLeft === 0;
+  const canAffordPaidDiscard = personalChips >= extraDiscardCost;
+  const canDiscard = !disabled && handsLeft > 1 && (!isPaidDiscard || canAffordPaidDiscard);
 
   const sortedHand = useMemo(() => sortCards(hand, sortMode), [hand, sortMode]);
 
@@ -77,19 +91,42 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
       </div>
 
       {/* Preview */}
+      {/* Scratch ticket active banner */}
+      {scratchMultiplier > 1 && (
+        <div className="scratch-banner">
+          <span className="scratch-banner-ticket">🎫</span>
+          <span>SCRATCH ACTIVE</span>
+          <span className="scratch-banner-mult">×{scratchMultiplier}</span>
+          <span className="text-orange-300 opacity-60 text-xs">next hand scores {scratchMultiplier}× chips</span>
+        </div>
+      )}
+
       <div className="h-8 flex items-center gap-3">
         {handResult && selectedIds.length > 0 ? (
           <>
             <span className="text-amber-300 font-semibold text-sm">{handResult.name}</span>
-            <span className="gold-glow font-bold">+{chipPreview.toLocaleString()} chips</span>
-            {scratchMultiplier > 1 && (
-              <span className="text-orange-400 text-sm font-bold">×{scratchMultiplier}!</span>
+            {handLevels[handResult.rank] > 1 && (
+              <span style={{ fontFamily: "'VT323',monospace", fontSize: 12, color: '#a78bfa', letterSpacing: '0.05em' }}>
+                Lv.{handLevels[handResult.rank]}
+              </span>
             )}
+            <span className={`font-bold ${scratchMultiplier > 1 ? 'text-orange-300' : 'gold-glow'}`}>
+              +{chipPreview.toLocaleString()} chips
+            </span>
+            <span className="text-gray-600 text-xs">({selectedIds.length} card{selectedIds.length !== 1 ? 's' : ''})</span>
           </>
         ) : (
           <span className="text-gray-600 text-sm">Select 1–5 cards to play</span>
         )}
       </div>
+
+      <TurnPips
+        handsPlayed={handsPlayed}
+        maxHands={maxHands}
+        vault={vault}
+        vaultTarget={vaultTarget}
+        turnTimeRemaining={turnTimeRemaining ?? null}
+      />
 
       <div className="flex gap-3 items-center">
         <button
@@ -102,18 +139,25 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
         <button
           onClick={canDiscard ? onDiscard : undefined}
           disabled={!canDiscard}
-          title="Discard entire hand and redraw — costs 1 hand"
+          title={isPaidDiscard ? `Costs ${extraDiscardCost}c — free discards used up` : `${freeDiscardsLeft} free discard${freeDiscardsLeft !== 1 ? 's' : ''} remaining`}
           className={[
             'btn-secondary text-sm px-4 py-2',
             !canDiscard ? 'opacity-30 cursor-default' : '',
+            isPaidDiscard && canAffordPaidDiscard ? 'border-amber-600 text-amber-400' : '',
           ].join(' ')}
         >
-          DISCARD ↺
+          {isPaidDiscard
+            ? <span>DISCARD <span style={{ fontSize: 11, color: '#fbbf24' }}>−{extraDiscardCost}c</span></span>
+            : <span>DISCARD <span style={{ fontSize: 11, opacity: 0.6 }}>{freeDiscardsLeft}↺</span></span>
+          }
         </button>
       </div>
 
       {!canDiscard && handsLeft <= 1 && (
         <div className="text-xs text-red-600">Last hand — can't discard</div>
+      )}
+      {!canDiscard && isPaidDiscard && !canAffordPaidDiscard && (
+        <div className="text-xs text-red-600">Can't afford discard ({extraDiscardCost}c)</div>
       )}
     </div>
   );

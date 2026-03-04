@@ -30,25 +30,12 @@ export interface Bounty {
   reward: BountyRewardType;
   rewardValue: number;
   rewardLabel: string;
+  fee: number;            // chips to accept this bounty
   accepted: boolean;
   completed: boolean;
 }
 
-// @ts-ignore
-function makeBounty(
-  id: string,
-  title: string,
-  desc: string,
-  condition: BountyConditionType,
-  conditionValue: number,
-  reward: BountyRewardType,
-  rewardValue: number,
-  rewardLabel: string,
-): Bounty {
-  return { id, title, description: desc, condition, conditionValue, reward, rewardValue, rewardLabel, accepted: false, completed: false };
-}
-
-const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
+export const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
   {
     title: 'High Roller',
     description: 'Play a Flush or better this round.',
@@ -57,6 +44,7 @@ const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
     reward: BountyReward.CHIPS,
     rewardValue: 80,
     rewardLabel: '+80 chips',
+    fee: 15,
   },
   {
     title: 'Full Send',
@@ -66,6 +54,7 @@ const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
     reward: BountyReward.CHIPS,
     rewardValue: 120,
     rewardLabel: '+120 chips',
+    fee: 20,
   },
   {
     title: 'Royal Treatment',
@@ -75,6 +64,7 @@ const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
     reward: BountyReward.CHIPS,
     rewardValue: 200,
     rewardLabel: '+200 chips',
+    fee: 35,
   },
   {
     title: 'The Straight',
@@ -84,6 +74,7 @@ const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
     reward: BountyReward.VAULT_REDUCE,
     rewardValue: 40,
     rewardLabel: 'Vault −40',
+    fee: 10,
   },
   {
     title: 'Honest Work',
@@ -93,6 +84,7 @@ const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
     reward: BountyReward.CHIPS,
     rewardValue: 100,
     rewardLabel: '+100 chips',
+    fee: 5,
   },
   {
     title: 'Efficient',
@@ -102,6 +94,7 @@ const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
     reward: BountyReward.EXTRA_HAND,
     rewardValue: 1,
     rewardLabel: '+1 hand next round',
+    fee: 15,
   },
   {
     title: 'Speed Run',
@@ -111,6 +104,7 @@ const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
     reward: BountyReward.CHIPS,
     rewardValue: 150,
     rewardLabel: '+150 chips',
+    fee: 30,
   },
   {
     title: 'Lucky Break',
@@ -120,6 +114,7 @@ const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
     reward: BountyReward.CHIPS,
     rewardValue: 50,
     rewardLabel: '+50 chips',
+    fee: 5,
   },
   {
     title: 'Steady Hands',
@@ -129,6 +124,7 @@ const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
     reward: BountyReward.VAULT_REDUCE,
     rewardValue: 30,
     rewardLabel: 'Vault −30',
+    fee: 10,
   },
   {
     title: 'Big Hand',
@@ -138,6 +134,7 @@ const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
     reward: BountyReward.SKIM_BOOST,
     rewardValue: 5,
     rewardLabel: 'Skim +5%',
+    fee: 20,
   },
 ];
 
@@ -146,7 +143,7 @@ export function generateBounties(round: number): Bounty[] {
     ? BOUNTY_POOL.filter(b => b.condition !== BountyCondition.PLAY_HAND_RANK || b.conditionValue <= HandRank.FLUSH)
     : BOUNTY_POOL;
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 3).map((b, i) => ({ ...b, id: `bounty-${round}-${i}`, accepted: false, completed: false }));
+  return shuffled.slice(0, 3).map((b, i) => ({ ...b, id: `bounty-${round}-${i}-${Math.random().toString(36).slice(2)}`, accepted: false, completed: false }));
 }
 
 export function checkBountyCondition(

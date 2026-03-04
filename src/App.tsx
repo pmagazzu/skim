@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { playChipBloop, playCardSelect, playCardDeselect, playCardDeal, playDiscard, playButtonPress, playHandPlay, playRoundWin, playRoundFail, playPurchase, playTimerWarn, playScoreImpact, playChipBloopScaled, playScoreSlamFinal, playVaultSeal } from './audio/sounds';
 import { useGameState } from './hooks/useGameState';
 import { Hand } from './components/Hand';
 import { CommunityCards } from './components/CommunityCards';
@@ -11,12 +12,111 @@ import { SkimReport } from './components/SkimReport';
 import { ResultModal } from './components/ResultModal';
 import { ScoreChain } from './components/ScoreChain';
 import { ConsumableResult } from './components/ConsumableResult';
+import ActiveBounties from './components/ActiveBounties';
+import DebugIndex from './pages/DebugIndex';
+import { Lobby } from './pages/Lobby';
+import { CoopGame } from './pages/CoopGame';
+import { PackOpenModal } from './components/PackOpenModal';
+import { OpponentArea } from './components/OpponentArea';
+import { DeckViewer } from './components/DeckViewer';
+import { UpgradeType } from './game/gameState';
 
 type SortMode = 'dealt' | 'high' | 'low' | 'suit';
 
 function App() {
+  const [appMode, setAppMode] = useState<'solo' | 'lobby' | 'coop'>('solo');
+  const [coopRoom, setCoopRoom] = useState<{ code: string; playerIndex: 0 | 1 } | null>(null);
+
   const { state, dispatch, selectedHandResult, selectedChipValue } = useGameState();
   const [sortMode, setSortMode] = useState<SortMode>('dealt');
+  const [showCatalog, setShowCatalog] = useState(false);
+  const [showDeckViewer, setShowDeckViewer] = useState(false);
+  const [turnTimer, setTurnTimer] = useState<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerWarnedHalf = useRef(false);
+  const timerWarnedUrgent = useRef(false);
+  const prevScore = useRef<number | null>(null);
+  const [shakeTier, setShakeTier] = useState(0);
+
+  // Play sounds when a hand scores — scaled by score/vaultTarget
+  useEffect(() => {
+    if (state.lastScore !== null && state.lastScore !== prevScore.current) {
+      prevScore.current = state.lastScore;
+      const tier = playScoreImpact(state.lastScore, state.vaultTarget, state.bestHandRankThisRound);
+
+      // Screen shake for tier 2+
+      if (tier >= 2) {
+        setShakeTier(tier);
+        setTimeout(() => setShakeTier(0), tier === 3 ? 500 : 300);
+      }
+
+      // Chip sequence with pitch climb
+      state.lastFiredChips.forEach((chipType, i) => {
+        playChipBloopScaled(chipType, i, tier);
+      });
+
+      // Final slam after all chips
+      const chipDelay = state.lastFiredChips.length > 0
+        ? state.lastFiredChips.length * (tier >= 2 ? 110 : 90) + 80
+        : 60;
+      setTimeout(() => playScoreSlamFinal(tier), chipDelay);
+    }
+  }, [state.lastScore, state.lastFiredChips, state.vaultTarget, state.bestHandRankThisRound]);
+
+  const prevPhase = useRef<string | null>(null);
+  // Play round result sounds on phase transition
+  // Turn timer — active during selecting phase (90s Round 1, 60s Round 2, 45s Round 3+)
+  useEffect(() => {
+    if (state.phase === 'selecting' && !state.consumableResult) {
+      const duration = state.ante >= 3 ? 45 : state.ante >= 2 ? 60 : 90;
+      timerWarnedHalf.current = false;
+      timerWarnedUrgent.current = false;
+      setTurnTimer(duration);
+      timerRef.current = setInterval(() => {
+        setTurnTimer(prev => {
+          if (prev === null || prev <= 1) {
+            clearInterval(timerRef.current!);
+            dispatch({ type: 'DISCARD_HAND' });
+            return null;
+          }
+          const next = prev - 1;
+          const half = Math.floor(duration / 2);
+          const quarter = Math.floor(duration / 4);
+          if (next <= half && !timerWarnedHalf.current) {
+            timerWarnedHalf.current = true;
+            playTimerWarn(false);
+          }
+          if (next <= quarter && !timerWarnedUrgent.current) {
+            timerWarnedUrgent.current = true;
+            playTimerWarn(true);
+          }
+          return next;
+        });
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+      setTurnTimer(null);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase, state.ante, state.handsPlayedThisRound]);
+
+  useEffect(() => {
+    if (prevPhase.current !== state.phase) {
+      if (state.phase === 'score-review') {
+        const vaultFilled = state.vault >= state.vaultTarget;
+        if (vaultFilled) {
+          setTimeout(() => playVaultSeal(), 200);
+          setTimeout(() => playRoundWin(), 700);
+        } else {
+          setTimeout(() => playRoundFail(), 400);
+        }
+      } else if (state.phase === 'ante-complete') {
+        setTimeout(() => playRoundWin(), 200);
+      }
+      prevPhase.current = state.phase;
+    }
+  }, [state.phase, state.vault, state.vaultTarget]);
 
   function getBadges(): string[] {
     const badges: string[] = [];
@@ -41,6 +141,21 @@ function App() {
 
   const totalSkimmed = state.roundHistory.reduce((s, r) => s + r.personalChips, 0);
 
+  // Co-op mode routing
+  if (appMode === 'lobby') {
+    return <Lobby
+      onGameStart={(code, idx) => { setCoopRoom({ code, playerIndex: idx }); setAppMode('coop'); }}
+      onBack={() => setAppMode('solo')}
+    />;
+  }
+  if (appMode === 'coop' && coopRoom) {
+    return <CoopGame
+      roomCode={coopRoom.code}
+      playerIndex={coopRoom.playerIndex}
+      onExit={() => { setCoopRoom(null); setAppMode('solo'); }}
+    />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
       <div className="vignette" />
@@ -53,18 +168,61 @@ function App() {
       )}
 
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-        <div className="title-font text-2xl gold-glow tracking-widest">SKIM</div>
-        <div className="flex items-center gap-4 text-sm">
-          <span className="text-gray-600">Round</span>
-          <span className="text-white font-bold">{state.round}/{state.totalRounds}</span>
-          <span className="text-gray-600">|</span>
-          <span className="text-gray-600">Bank</span>
-          <span className="gold-glow font-bold chip-counter">{state.personalChips.toLocaleString()}</span>
+      <header className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+        <div className="flex items-center gap-3">
+          <div className="title-font text-2xl gold-glow tracking-widest">SKIM</div>
+          <button onClick={() => setAppMode('lobby')} style={{ fontFamily: "'Press Start 2P',monospace", fontSize: 7, background: 'transparent', border: '1px solid #3a2e1e', borderRadius: 4, color: '#6b5a3e', padding: '3px 7px', cursor: 'pointer', letterSpacing: '0.05em' }}>
+            CO-OP
+          </button>
         </div>
+
+        {/* Ante progress tracker */}
+        {state.phase !== 'difficulty' && (
+          <div className="flex items-center gap-3">
+            {/* Round indicator */}
+            <div className="flex flex-col items-center">
+              <div className="text-xs text-gray-600 uppercase tracking-widest">Round</div>
+              <div className="title-font text-lg text-amber-400">{state.ante}</div>
+            </div>
+            {/* Level pips */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="text-xs text-gray-600 uppercase tracking-widest">Level</div>
+              <div className="flex gap-1.5">
+                {[1, 2, 3].map(r => (
+                  <div
+                    key={r}
+                    className={`w-3 h-3 rounded-full border transition-all ${
+                      r < state.roundInAnte
+                        ? 'bg-emerald-500 border-emerald-400'
+                        : r === state.roundInAnte
+                        ? 'bg-amber-400 border-amber-300 shadow-[0_0_6px_rgba(251,191,36,0.6)]'
+                        : 'bg-transparent border-gray-700'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+            {/* Rounds beaten */}
+            {state.ante > 1 && (
+              <div className="flex flex-col items-center">
+                <div className="text-xs text-gray-600 uppercase tracking-widest">Cleared</div>
+                <div className="flex gap-1">
+                  {Array.from({ length: state.ante - 1 }).map((_, i) => (
+                    <span key={i} className="text-emerald-500 text-xs">✦</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="w-px h-8 bg-white/10" />
+            <div className="flex flex-col items-end">
+              <div className="text-xs text-gray-600">Bank</div>
+              <div className="gold-glow font-bold chip-counter text-sm">{state.personalChips.toLocaleString()}</div>
+            </div>
+          </div>
+        )}
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center p-4 gap-6">
+      <main className="flex-1 flex flex-col items-center justify-start p-0 w-full overflow-x-hidden">
 
         {/* DIFFICULTY SELECT */}
         {state.phase === 'difficulty' && (
@@ -108,7 +266,7 @@ function App() {
                 onReorder={(from, to) => dispatch({ type: 'REORDER_CHIPS', fromIndex: from, toIndex: to })}
               />
             )}
-            <button onClick={() => dispatch({ type: 'DEAL' })} className="btn-primary text-xl px-16 py-4">
+            <button onClick={() => { playButtonPress(); [0,1,2,3,4].forEach(i => playCardDeal(i)); dispatch({ type: 'DEAL' }); }} className="btn-primary text-xl px-16 py-4">
               DEAL
             </button>
           </div>
@@ -116,48 +274,165 @@ function App() {
 
         {/* SELECTING */}
         {state.phase === 'selecting' && (
-          <div className="w-full max-w-2xl flex flex-col gap-5">
-            {/* Stats row */}
-            <div className="grid grid-cols-2 gap-3">
-              <Vault chips={state.vault} target={state.vaultTarget} />
-              <SkimLedger
-                personalChips={state.personalChips}
-                skimRate={state.skimRate}
-                roundChips={state.roundChips}
-                lastScore={state.lastScore}
-                lastHandName={state.lastHandName}
-                lastBonusDetail={state.lastBonusDetail}
-              />
-            </div>
+          <div className="game-canvas">
+            {/* ── Outer row: consumables sidebar | felt ── */}
+            <div className="felt-outer-row">
 
-            {/* Community cards */}
-            <CommunityCards
-              cards={state.communityCards}
-              selectedIds={state.selectedIds}
-              onSelect={id => dispatch({ type: 'SELECT_CARD', id })}
-              deckCount={state.deck.length}
-              newCardIds={state.newCommunityIds}
-              onClearNew={() => dispatch({ type: 'CLEAR_NEW_COMMUNITY' })}
-            />
-
-            {/* Felt / hand area */}
-            <div className="felt p-5">
-              <Hand
-                hand={state.hand}
-                selectedIds={state.selectedIds}
-                onSelect={id => dispatch({ type: 'SELECT_CARD', id })}
-                onPlay={() => dispatch({ type: 'PLAY_HAND' })}
-                onDiscard={() => dispatch({ type: 'DISCARD_HAND' })}
-                handResult={selectedHandResult}
-                chipPreview={selectedChipValue}
+            {/* Consumables vertical bar */}
+            <div className="consumables-sidebar">
+              <Consumables
+                held={state.consumables}
+                onUse={type => dispatch({ type: 'USE_CONSUMABLE', consumable: type })}
+                onRouletteBet={amount => dispatch({ type: 'ROULETTE_BET', amount })}
                 scratchMultiplier={state.scratchMultiplier}
-                handsLeft={state.maxHandsPerRound - state.handsPlayedThisRound}
-                sortMode={sortMode}
-                onSortChange={setSortMode}
+                unlockedSlots={state.consumableSlots}
+                vertical
               />
             </div>
 
-            {/* Scoring chain — shown after a hand is played */}
+            {/* ── Felt table: everything lives on the felt now ── */}
+            <div className={`felt felt-table relative felt-skin-${state.feltSkin}${shakeTier >= 3 ? ' felt-shake-big' : shakeTier === 2 ? ' felt-shake' : ''}`} style={{ flex: 1, minWidth: 0 }}>
+
+              {/* Turn timer bars — top + bottom edges of felt */}
+              {turnTimer !== null && (() => {
+                const duration = state.ante >= 3 ? 45 : state.ante >= 2 ? 60 : 90;
+                const pct = (turnTimer / duration) * 100;
+                const isRed = turnTimer <= Math.floor(duration / 4);
+                const isAmber = !isRed && turnTimer <= Math.floor(duration / 2);
+                const color = isRed ? '#ef4444' : isAmber ? '#f59e0b' : '#22c55e';
+                const glow = isRed ? '0 0 10px rgba(239,68,68,0.9)' : isAmber ? '0 0 6px rgba(245,158,11,0.7)' : 'none';
+                const barStyle = { height: '100%', width: `${pct}%`, background: color, transition: 'width 1s linear, background 0.3s ease', boxShadow: glow };
+                return (
+                  <>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, borderRadius: '1rem 1rem 0 0', overflow: 'hidden', zIndex: 10 }}>
+                      <div style={barStyle} />
+                    </div>
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, borderRadius: '0 0 1rem 1rem', overflow: 'hidden', zIndex: 10 }}>
+                      <div style={barStyle} />
+                    </div>
+                    {isRed && (
+                      <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 20, fontFamily: "'VT323',monospace", fontSize: 13, color: '#ef4444', letterSpacing: '0.1em', animation: 'pulse 0.5s ease-in-out infinite alternate', pointerEvents: 'none' }}>
+                        ⚠ TIME RUNNING OUT
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+              {/* timer text handled by TurnPips */}
+
+
+              {/* Row 1: Vault | Opponent cards | SkimLedger */}
+              <div className="felt-top-row">
+                <div className="felt-corner-left">
+                  <Vault chips={state.vault} target={state.vaultTarget} />
+                  <div style={{ fontFamily: "'VT323',monospace", fontSize: 13, color: '#ca8a04', letterSpacing: '0.08em', marginTop: 2 }}>
+                    Round {state.ante} · Level {state.roundInAnte}/3
+                  </div>
+                  {state.activeBounties.length > 0 && (
+                    <div className="flex flex-col gap-0.5 mt-1" style={{ maxWidth: 140 }}>
+                      {state.activeBounties.map(b => (
+                        <div key={b.id} className={[
+                          'text-xs px-1.5 py-0.5 rounded truncate',
+                          b.completed ? 'text-emerald-600 opacity-50 line-through' : 'text-amber-700',
+                        ].join(' ')} style={{ fontFamily: "'VT323',monospace", fontSize: 12 }}>
+                          {b.completed ? '✓' : '◎'} {b.title}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <OpponentArea />
+                <div className="felt-corner-right">
+                  <SkimLedger
+                    personalChips={state.personalChips}
+                    skimRate={state.skimRate}
+                    roundChips={state.roundChips}
+                    lastScore={state.lastScore}
+                    lastHandName={state.lastHandName}
+                    lastBonusDetail={state.lastBonusDetail}
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: community left | hand right */}
+              <div className="table-divider" />
+              <div className="felt-play-row">
+
+                {/* LEFT: Community cards + chip stack */}
+                <div className="felt-community-col">
+                  <CommunityCards
+                    cards={state.communityCards}
+                    selectedIds={state.selectedIds}
+                    onSelect={id => {
+                      const wasSelected = state.selectedIds.includes(id);
+                      wasSelected ? playCardDeselect() : playCardSelect();
+                      dispatch({ type: 'SELECT_CARD', id });
+                    }}
+                    deckCount={state.deck.length}
+                    newCardIds={state.newCommunityIds}
+                    onClearNew={() => dispatch({ type: 'CLEAR_NEW_COMMUNITY' })}
+                    onDeckClick={() => setShowDeckViewer(true)}
+                    sortMode={sortMode}
+                  />
+                  {state.chipStack.length > 0 && (
+                    <div className="flex flex-col items-center gap-1 mt-1">
+                      <ChipStack
+                        chips={state.chipStack}
+                        blackChipUsed={state.blackChipUsedThisRound}
+                        lastFiredChips={state.lastFiredChips}
+                        canTip={state.phase === 'selecting' && !state.tipBonus}
+                        onReorder={(from, to) => dispatch({ type: 'REORDER_CHIPS', fromIndex: from, toIndex: to })}
+                        onTipChip={index => dispatch({ type: 'TIP_CHIP', index })}
+                      />
+                      {state.tipBonus && (
+                        <div className="text-xs px-3 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-amber-300 animate-pulse" style={{ fontFamily: "'VT323',monospace", fontSize: 13 }}>
+                          🎯 TIP ACTIVE: {state.tipBonus.label} — fires next hand
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* RIGHT: Your hand + bounties — centered */}
+                <div className="felt-hand-col">
+                  {state.activeBounties.length > 0 && (
+                    <div className="flex justify-center">
+                      <ActiveBounties bounties={state.activeBounties} />
+                    </div>
+                  )}
+                  <Hand
+                    hand={state.hand}
+                    selectedIds={state.selectedIds}
+                    onSelect={id => {
+                      const wasSelected = state.selectedIds.includes(id);
+                      wasSelected ? playCardDeselect() : playCardSelect();
+                      dispatch({ type: 'SELECT_CARD', id });
+                    }}
+                    onPlay={() => { playHandPlay(); dispatch({ type: 'PLAY_HAND' }); }}
+                    onDiscard={() => { playDiscard(); dispatch({ type: 'DISCARD_HAND' }); }}
+                    handResult={selectedHandResult}
+                    chipPreview={selectedChipValue}
+                    scratchMultiplier={state.scratchMultiplier}
+                    handsLeft={state.maxHandsPerRound - state.handsPlayedThisRound}
+                    handsPlayed={state.handsPlayedThisRound}
+                    maxHands={state.maxHandsPerRound}
+                    vault={state.vault}
+                    vaultTarget={state.vaultTarget}
+                    turnTimeRemaining={turnTimer}
+                    sortMode={sortMode}
+                    onSortChange={setSortMode}
+                    discardsUsed={state.discardedThisRound}
+                    maxFreeDiscards={state.maxFreeDiscards}
+                    extraDiscardCost={state.extraDiscardCost}
+                    personalChips={state.personalChips}
+                    handLevels={state.handLevels}
+                  />
+                </div>
+              </div>
+            </div>
+            </div>
+
+            {/* Scoring chain — compact inline strip, below the outer row */}
             {state.lastScore !== null && state.lastBaseScore !== null && (
               <ScoreChain
                 baseScore={state.lastBaseScore}
@@ -168,44 +443,44 @@ function App() {
               />
             )}
 
-            {/* Bottom row: consumables + chip stack */}
-            <div className="flex gap-4 items-start">
-              <Consumables
-                held={state.consumables}
-                onUse={type => dispatch({ type: 'USE_CONSUMABLE', consumable: type })}
-                onRouletteBet={amount => dispatch({ type: 'ROULETTE_BET', amount })}
-                scratchMultiplier={state.scratchMultiplier}
+            {/* Bottom: level indicator */}
+            <div style={{ textAlign: 'center', fontFamily: "'VT323',monospace", fontSize: 13, color: '#374151', paddingTop: 2 }}>
+              Round {state.ante} · Level {state.roundInAnte}/3
+            </div>
+
+          </div>
+        )}
+
+        {/* SCORE REVIEW — pause after last hand before advancing */}
+        {state.phase === 'score-review' && (
+          <div className="w-full max-w-2xl flex flex-col gap-5 items-center">
+            <div className="title-font text-2xl gold-glow tracking-widest">Round Complete</div>
+            {state.lastScore !== null && state.lastBaseScore !== null && (
+              <ScoreChain
+                baseScore={state.lastBaseScore}
+                handName={state.lastHandName ?? ''}
+                steps={state.lastScoreChain}
+                finalScore={state.lastScore}
+                skimRate={state.skimRate}
               />
-              {state.chipStack.length > 0 && (
-                <ChipStack
-                  chips={state.chipStack}
-                  blackChipUsed={state.blackChipUsedThisRound}
-                  onReorder={(from, to) => dispatch({ type: 'REORDER_CHIPS', fromIndex: from, toIndex: to })}
-                />
-              )}
-            </div>
-
-            {/* Active bounties tracker */}
-            {state.activeBounties.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {state.activeBounties.map(b => (
-                  <div key={b.id} className={[
-                    'text-xs px-2 py-1 rounded border',
-                    b.completed
-                      ? 'border-emerald-700 text-emerald-400 line-through opacity-60'
-                      : 'border-amber-800/40 text-amber-600',
-                  ].join(' ')}>
-                    {b.completed ? '✓' : '◎'} {b.title}
-                  </div>
-                ))}
-              </div>
             )}
-
-            <div className="flex justify-center gap-4 section-label">
-              <span className={state.handsPlayedThisRound >= state.maxHandsPerRound - 2 ? 'text-red-600' : ''}>
-                {state.maxHandsPerRound - state.handsPlayedThisRound} hands remaining
-              </span>
+            <div className="grid grid-cols-2 gap-3 w-full">
+              <Vault chips={state.vault} target={state.vaultTarget} />
+              <SkimLedger
+                personalChips={state.personalChips}
+                skimRate={state.skimRate}
+                roundChips={state.roundChips}
+                lastScore={state.lastScore}
+                lastHandName={state.lastHandName}
+                lastBonusDetail={state.lastBonusDetail}
+              />
             </div>
+            <button
+              onClick={() => { playButtonPress(); dispatch({ type: 'CONTINUE_SCORE_REVIEW' }); }}
+              className="btn-primary text-lg px-12 py-3 mt-2"
+            >
+              Continue to Results →
+            </button>
           </div>
         )}
 
@@ -214,9 +489,24 @@ function App() {
           <SkimReport
             result={roundPreviewResult}
             round={state.round}
-            totalRounds={state.totalRounds}
-            onContinue={() => dispatch({ type: 'NEXT_ROUND' })}
+            roundInAnte={state.roundInAnte}
+            ante={state.ante}
+            onContinue={() => { playButtonPress(); dispatch({ type: 'NEXT_ROUND' }); }}
           />
+        )}
+
+        {/* ANTE COMPLETE */}
+        {state.phase === 'ante-complete' && (
+          <div className="flex flex-col items-center gap-6 text-center p-8 max-w-sm">
+            <div className="title-font text-4xl gold-glow tracking-widest">✦ ROUND {state.ante - 1} COMPLETE ✦</div>
+            <div className="text-gray-400 text-sm">The stakes are rising. Round {state.ante} begins.</div>
+            <div className="text-amber-400 text-sm font-semibold">
+              Vault target: <span className="gold-glow chip-counter">{state.vaultTarget.toLocaleString()}</span>
+            </div>
+            <button onClick={() => { playButtonPress(); [0,1,2,3,4].forEach(i => playCardDeal(i)); dispatch({ type: 'START_ANTE' }); }} className="btn-primary text-xl px-16 py-4 mt-2">
+              START ROUND {state.ante} →
+            </button>
+          </div>
         )}
 
         {/* SHOP */}
@@ -226,9 +516,24 @@ function App() {
             personalChips={state.personalChips}
             consumableCount={state.consumables.length}
             chipCount={state.chipStack.length}
+            maxChips={state.purchasedUpgrades.includes(UpgradeType.EXTRA_CHIP_SLOT) ? 6 : 5}
+            deckSize={state.deck.length}
+            lowCardCount={state.deck.filter(c => c.rank <= 8).length}
             availableBounties={state.availableBounties}
-            onBuy={id => dispatch({ type: 'BUY_ITEM', itemId: id })}
+            chipStack={state.chipStack}
+            purchasedUpgrades={state.purchasedUpgrades}
+            shopDiscount={state.shopDiscount}
+            onBuy={id => { playPurchase(); dispatch({ type: 'BUY_ITEM', itemId: id }); }}
             onAcceptBounty={id => dispatch({ type: 'ACCEPT_BOUNTY', bountyId: id })}
+            handLevels={state.handLevels}
+            shopHandUpgrades={state.shopHandUpgrades}
+            handRerollCost={state.handRerollCost}
+            onSellChip={index => dispatch({ type: 'SELL_CHIP', index })}
+            onBuyUpgrade={t => { playPurchase(); dispatch({ type: 'BUY_UPGRADE', upgradeType: t }); }}
+            onBuyHandUpgrade={rank => { playPurchase(); dispatch({ type: 'BUY_HAND_UPGRADE', handRank: rank }); }}
+            onRerollHandUpgrades={() => dispatch({ type: 'REROLL_HAND_UPGRADES' })}
+            onBuyForge={rarity => { playPurchase(); dispatch({ type: 'BUY_FORGE', rarity }); }}
+            onViewDeck={() => setShowDeckViewer(true)}
             onEndShop={() => dispatch({ type: 'END_SHOP' })}
           />
         )}
@@ -298,6 +603,41 @@ function App() {
           title={state.consumableResult.title}
           message={state.consumableResult.message}
           onDismiss={() => dispatch({ type: 'DISMISS_RESULT' })}
+        />
+      )}
+
+      {/* Debug buttons — dev only */}
+      {import.meta.env.DEV && (
+        <>
+          <button
+            onClick={() => dispatch({ type: 'DEBUG_WIN' })}
+            className="fixed bottom-4 right-4 z-50 text-xs px-3 py-1.5 rounded bg-yellow-500/20 border border-yellow-600/40 text-yellow-400 hover:bg-yellow-500/40 transition-all"
+          >
+            ⚡ DEBUG WIN
+          </button>
+          <button
+            onClick={() => setShowCatalog(true)}
+            className="fixed bottom-4 right-28 z-50 text-xs px-3 py-1.5 rounded bg-blue-500/20 border border-blue-600/40 text-blue-400 hover:bg-blue-500/40 transition-all"
+          >
+            📖 CATALOG
+          </button>
+        </>
+      )}
+      {showCatalog && <DebugIndex onClose={() => setShowCatalog(false)} />}
+      {state.pendingPackResult && (
+        <PackOpenModal
+          result={state.pendingPackResult}
+          onConfirm={() => dispatch({ type: 'CONFIRM_PACK' })}
+        />
+      )}
+      {showDeckViewer && (
+        <DeckViewer
+          deck={state.deck}
+          hand={state.hand}
+          community={state.communityCards}
+          playedCardIds={state.playedCardIds}
+          handLevels={state.handLevels}
+          onClose={() => setShowDeckViewer(false)}
         />
       )}
     </div>

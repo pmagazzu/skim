@@ -19,7 +19,7 @@ export function useGameState(): UseGameStateReturn {
   const selectedCards = allCards.filter(c => state.selectedIds.includes(c.id));
   const selectedHandResult = selectedCards.length >= 1 ? evaluateHand(selectedCards) : null;
   const selectedChipValue = selectedHandResult
-    ? chipValue(selectedHandResult, selectedCards, state.scratchMultiplier)
+    ? Math.floor(chipValue(selectedHandResult, selectedCards, state.handLevels) * state.scratchMultiplier)
     : 0;
 
   return { state, dispatch, selectedHandResult, selectedChipValue };
