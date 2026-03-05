@@ -161,10 +161,7 @@ body::after {
   perspective: 1200px;
   transform-style: preserve-3d;
 }
-#root {
-  /* Barrel distortion hint — barely there */
-  transform: perspective(900px) rotateX(0.2deg);
-}
+/* transform removed — caused fixed-position children to break stacking context */
 
 /* Felt table */
 .felt {
