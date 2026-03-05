@@ -69,13 +69,6 @@ export function ChipStack({ chips, blackChipUsed, lastFiredChips = [], canTip = 
               key={`${type}-${i}`}
               className="relative"
               onClick={() => handleChipTap(i)}
-              onMouseEnter={() => { cancelHide(); setTooltip(i); }}
-              onMouseLeave={() => {
-                hideTimer.current = setTimeout(() => {
-                  setTooltip(null);
-                  if (pendingSwap !== null) setPendingSwap(null);
-                }, 200);
-              }}
             >
               <div className={[
                 'cursor-pointer select-none transition-transform',
@@ -116,8 +109,7 @@ export function ChipStack({ chips, blackChipUsed, lastFiredChips = [], canTip = 
               boxShadow: '0 0 32px rgba(0,0,0,0.8)',
             }}
             onClick={e => e.stopPropagation()}
-            onMouseEnter={cancelHide}
-            onMouseLeave={() => { hideTimer.current = setTimeout(closeTooltip, 200); }}
+
           >
             <div style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: '#fbbf24', marginBottom: 4 }}>{tooltipChipData.name}</div>
             {tooltipChipData.rarity && (
