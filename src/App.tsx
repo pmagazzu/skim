@@ -618,8 +618,8 @@ function App() {
         />
       )}
 
-      {/* Debug buttons — dev only */}
-      {import.meta.env.DEV && (
+      {/* Debug buttons */}
+      {true && (
         <>
           {/* Big arcade DEV WIN button */}
           <button
