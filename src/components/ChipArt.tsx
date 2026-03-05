@@ -56,6 +56,20 @@ const CHIP_STYLE: Record<string, [string, string, string, string, string]> = {
   FORGE:    ['#c2410c', '#9a3412', '#fed7aa', '#431407',  '⚒'],
   PRISM:    ['#0891b2', '#0e7490', '#a5f3fc', '#083344',  '◈'],
   VOID:     ['#030712', '#111827', '#6b7280', '#f9fafb',  '◉'],
+  // Batch 2 — Common
+  FLINT:    ['#57534e', '#44403c', '#d6d3d1', '#e7e5e4',  '⚡'],
+  COAL:     ['#171717', '#0a0a0a', '#404040', '#a3a3a3',  '1'],
+  // Batch 2 — Uncommon
+  IVORY:    ['#d6d3d1', '#a8a29e', '#fffbeb', '#78350f',  'A'],
+  GRANITE:  ['#6b7280', '#374151', '#9ca3af', '#f3f4f6',  '⬡'],
+  PYRITE:   ['#ca8a04', '#854d0e', '#fef08a', '#713f12',  'Au'],
+  TIDE:     ['#0f766e', '#134e4a', '#5eead4', '#ccfbf1',  '≈'],
+  // Batch 2 — Rare
+  SHARD:    ['#7c3aed', '#4c1d95', '#c4b5fd', '#ede9fe',  '◭'],
+  LICHEN:   ['#4d7c0f', '#365314', '#a3e635', '#ecfccb',  '⊕'],
+  // Batch 2 — Legendary
+  AURORA:   ['#7e22ce', '#4c1d95', '#67e8f9', '#e0f2fe',  '✦'],
+  ECHO:     ['#3730a3', '#1e1b4b', '#a5b4fc', '#e0e7ff',  '↩'],
 };
 
 export function ChipArt({ type, size = 40, dimmed = false, fired = false, fireKey }: ChipArtProps) {
