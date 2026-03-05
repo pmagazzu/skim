@@ -621,11 +621,49 @@ function App() {
       {/* Debug buttons — dev only */}
       {import.meta.env.DEV && (
         <>
+          {/* Big arcade DEV WIN button */}
           <button
             onClick={() => dispatch({ type: 'DEBUG_WIN' })}
-            className="fixed bottom-4 right-4 z-50 text-xs px-3 py-1.5 rounded bg-yellow-500/20 border border-yellow-600/40 text-yellow-400 hover:bg-yellow-500/40 transition-all"
+            style={{
+              position: 'fixed',
+              bottom: 24,
+              right: 20,
+              zIndex: 300,
+              width: 80,
+              height: 80,
+              borderRadius: 14,
+              background: 'linear-gradient(145deg, #1e40af, #1d4ed8, #1e3a8a)',
+              border: '3px solid #3b82f6',
+              boxShadow: '0 0 0 2px #1e3a8a, 0 6px 0 #1e3a8a, 0 8px 16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)',
+              color: '#bfdbfe',
+              fontFamily: "'Press Start 2P', monospace",
+              fontSize: 9,
+              lineHeight: 1.4,
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 4,
+              transition: 'transform 0.08s, box-shadow 0.08s',
+              userSelect: 'none',
+            }}
+            onMouseDown={e => {
+              (e.currentTarget as HTMLElement).style.transform = 'translateY(4px)';
+              (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 2px #1e3a8a, 0 2px 0 #1e3a8a, 0 4px 8px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)';
+            }}
+            onMouseUp={e => {
+              (e.currentTarget as HTMLElement).style.transform = '';
+              (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 2px #1e3a8a, 0 6px 0 #1e3a8a, 0 8px 16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.transform = '';
+              (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 2px #1e3a8a, 0 6px 0 #1e3a8a, 0 8px 16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)';
+            }}
           >
-            ⚡ DEBUG WIN
+            <span style={{ fontSize: 22 }}>⚡</span>
+            <span>DEV</span>
+            <span>WIN</span>
           </button>
           <button
             onClick={() => setShowCatalog(true)}
