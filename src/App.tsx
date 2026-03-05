@@ -249,14 +249,6 @@ function App() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
       <div className="vignette" />
-      {state.consumableResult && (
-        <ConsumableResult
-          title={state.consumableResult.title}
-          message={state.consumableResult.message}
-          onDismiss={() => dispatch({ type: 'DISMISS_RESULT' })}
-        />
-      )}
-
       {/* Header — hidden during active gameplay to save vertical space */}
       <header className={`flex items-center justify-between px-4 py-3 border-b border-white/5 ${state.phase === 'selecting' || state.phase === 'score-review' ? 'hidden' : ''}`} style={{ maxWidth: 430, width: '100%', alignSelf: 'center', boxSizing: 'border-box' }}>
         <div className="flex items-center gap-3">

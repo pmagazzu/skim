@@ -6,7 +6,7 @@ interface ConsumableResultProps {
 
 export function ConsumableResult({ title, message, onDismiss }: ConsumableResultProps) {
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm" onClick={onDismiss}>
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center backdrop-blur-sm" style={{ zIndex: 400 }} onClick={onDismiss}>
       <div
         className="bg-[#120f0c] border border-amber-800/40 rounded-2xl p-6 w-72 flex flex-col gap-4 shadow-2xl"
         onClick={e => e.stopPropagation()}

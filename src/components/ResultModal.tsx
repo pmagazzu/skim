@@ -7,7 +7,7 @@ interface ResultModalProps {
 export function ResultModal({ title, message, onDismiss }: ResultModalProps) {
   return (
     <div
-      className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 backdrop-blur-sm"
+      className="fixed inset-0 bg-black/75 flex items-center justify-center backdrop-blur-sm" style={{ zIndex: 400 }}
       onClick={onDismiss}
     >
       <div
