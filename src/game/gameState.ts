@@ -588,6 +588,20 @@ function generateShop(_held: ConsumableTypeValue[], chipStack: ChipTypeValue[], 
     });
   }
 
+  // Helper: roll a chip rarity weighted by ante
+  function rollRarity(a: number): string {
+    const weights = [
+      { r: 'common',    w: a === 1 ? 6 : a === 2 ? 4 : 3 },
+      { r: 'uncommon',  w: a === 1 ? 0 : a === 2 ? 3 : 2.5 },
+      { r: 'rare',      w: a === 1 ? 0 : a === 2 ? 0 : 1.2 },
+      { r: 'legendary', w: a === 1 ? 0 : a === 2 ? 0 : 0.4 },
+    ].filter(x => x.w > 0);
+    const total = weights.reduce((s, x) => s + x.w, 0);
+    let rand = Math.random() * total;
+    for (const { r, w } of weights) { rand -= w; if (rand <= 0) return r; }
+    return 'common';
+  }
+
   // LUCKY_SHOP: add one extra rarity-weighted chip
   if (upgrades.includes(UpgradeType.LUCKY_SHOP)) {
     const extraRarity = rollRarity(ante);
