@@ -810,6 +810,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const allBlack = selectedCards.every(c => c.suit === 'spades' || c.suit === 'clubs');
       const allRed = selectedCards.every(c => c.suit === 'hearts' || c.suit === 'diamonds');
       const uniqueSuitCount = new Set(selectedCards.map(c => c.suit)).size;
+      const faceCardCount = selectedCards.filter(c => c.rank === 11 || c.rank === 12 || c.rank === 13).length;
+      const aceCount = selectedCards.filter(c => c.rank === 1 || c.rank === 14).length;
 
       // Apply chips SEQUENTIALLY — order matters!
       const chain = applyChipsSequential(
@@ -829,6 +831,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         state.maxHandsPerRound,
         state.scratchMultiplier,
         uniqueSuitCount,
+        faceCardCount,
+        aceCount,
+        state.personalChips,
+        state.chipStack.length,
+        state.ante,
       );
 
       // Resolve card modifiers — flat bonus + mult bonus + cursed removals

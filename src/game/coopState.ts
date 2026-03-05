@@ -174,6 +174,11 @@ export function coopReducer(state: CoopGameState, action: CoopAction): CoopGameS
       state.maxHandsPerRound,
       player.scratchMultiplier,
       new Set(selectedCards.map(c => c.suit)).size,
+      selectedCards.filter(c => c.rank === 11 || c.rank === 12 || c.rank === 13).length,
+      selectedCards.filter(c => c.rank === 1 || c.rank === 14).length,
+      player.personalChips,
+      player.chipStack.length,
+      state.ante ?? 1,
     );
 
     // Modifier resolution

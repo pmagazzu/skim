@@ -90,6 +90,20 @@ export const ChipType = {
   MARBLE:    'MARBLE',
   RUST:      'RUST',
   GRAVEL:    'GRAVEL',
+  // Batch 2 — Common
+  FLINT:     'FLINT',
+  COAL:      'COAL',
+  // Batch 2 — Uncommon
+  IVORY:     'IVORY',
+  GRANITE:   'GRANITE',
+  PYRITE:    'PYRITE',
+  TIDE:      'TIDE',
+  // Batch 2 — Rare
+  SHARD:     'SHARD',
+  LICHEN:    'LICHEN',
+  // Batch 2 — Legendary
+  AURORA:    'AURORA',
+  ECHO:      'ECHO',
 } as const;
 
 export type ChipTypeValue = typeof ChipType[keyof typeof ChipType];
@@ -470,6 +484,100 @@ export const CHIPS: Record<ChipTypeValue, Chip> = {
     cost: 160,
     rarity: 'legendary',
   },
+  // ── Batch 2 — Common ─────────────────────────────────────────────────────
+  FLINT: {
+    type: ChipType.FLINT,
+    name: 'Flint Chip',
+    description: '+10 chips per face card (J, Q, K) in your played hand.',
+    color: 'bg-stone-700',
+    textColor: 'text-stone-300',
+    cost: 30,
+    rarity: 'common',
+  },
+  COAL: {
+    type: ChipType.COAL,
+    name: 'Coal Chip',
+    description: 'Play exactly 1 card: +35 chips.',
+    color: 'bg-gray-900',
+    textColor: 'text-gray-400',
+    cost: 25,
+    rarity: 'common',
+  },
+  // ── Batch 2 — Uncommon ───────────────────────────────────────────────────
+  IVORY: {
+    type: ChipType.IVORY,
+    name: 'Ivory Chip',
+    description: 'Each Ace in your played hand: +25 chips (up to +100 for 4 Aces).',
+    color: 'bg-amber-50',
+    textColor: 'text-amber-900',
+    cost: 55,
+    rarity: 'uncommon',
+  },
+  GRANITE: {
+    type: ChipType.GRANITE,
+    name: 'Granite Chip',
+    description: '+40 chips if you use zero community cards.',
+    color: 'bg-stone-500',
+    textColor: 'text-stone-200',
+    cost: 50,
+    rarity: 'uncommon',
+  },
+  PYRITE: {
+    type: ChipType.PYRITE,
+    name: 'Pyrite Chip',
+    description: "×1.2 if your wallet has 50c or more. Fool's gold.",
+    color: 'bg-yellow-600',
+    textColor: 'text-yellow-200',
+    cost: 55,
+    rarity: 'uncommon',
+  },
+  TIDE: {
+    type: ChipType.TIDE,
+    name: 'Tide Chip',
+    description: 'Odd hands this round: +45 chips. Even hands: nothing.',
+    color: 'bg-teal-600',
+    textColor: 'text-teal-200',
+    cost: 50,
+    rarity: 'uncommon',
+  },
+  // ── Batch 2 — Rare ───────────────────────────────────────────────────────
+  SHARD: {
+    type: ChipType.SHARD,
+    name: 'Shard Chip',
+    description: 'Two Pair: ×1.3 · Full House: ×1.6 · Four of a Kind: ×2.0.',
+    color: 'bg-violet-600',
+    textColor: 'text-violet-200',
+    cost: 90,
+    rarity: 'rare',
+  },
+  LICHEN: {
+    type: ChipType.LICHEN,
+    name: 'Lichen Chip',
+    description: '×1.1 per completed Round. Starts weak, compounds over time.',
+    color: 'bg-lime-700',
+    textColor: 'text-lime-300',
+    cost: 80,
+    rarity: 'rare',
+  },
+  // ── Batch 2 — Legendary ──────────────────────────────────────────────────
+  AURORA: {
+    type: ChipType.AURORA,
+    name: 'Aurora Chip',
+    description: '×1.05 for each chip in your stack. Scales with your collection.',
+    color: 'bg-purple-700',
+    textColor: 'text-cyan-200',
+    cost: 220,
+    rarity: 'legendary',
+  },
+  ECHO: {
+    type: ChipType.ECHO,
+    name: 'Echo Chip',
+    description: 'Fires the chip directly before it in your stack a second time.',
+    color: 'bg-indigo-800',
+    textColor: 'text-indigo-200',
+    cost: 200,
+    rarity: 'legendary',
+  },
 };
 
 export function getChip(type: ChipTypeValue): Chip {
@@ -520,6 +628,11 @@ export function applyChipsSequential(
   _maxHandsThisRound = 8,
   scratchMultiplier = 1,
   uniqueSuitCount = 1,     // number of unique suits in selected hand (for PRISM)
+  faceCardCount = 0,       // J/Q/K count in played hand (for FLINT)
+  aceCount = 0,            // Aces in played hand (for IVORY)
+  wallet = 0,              // current coins (for PYRITE)
+  chipStackSize = 1,       // total chips in stack (for AURORA)
+  ante = 1,                // current ante / completed rounds (for LICHEN)
 ): ChainResult {
   // MOONSTONE: pick one random chip (other than MOONSTONE) to fire twice
   const moonstoneActive = chips.includes(ChipType.MOONSTONE);
@@ -837,6 +950,112 @@ export function applyChipsSequential(
         const voidMult = isLastHand ? 2.5 : 0.8;
         running = Math.floor(running * voidMult);
         steps.push({ chipType: chip, label: 'Void Chip', delta: isLastHand ? '×2.5' : '×0.8', before, after: running });
+        break;
+      }
+      // ── Batch 2 — Common ───────────────────────────────────────────────
+      case ChipType.FLINT: {
+        if (faceCardCount > 0) {
+          const bonus = faceCardCount * 10;
+          running += bonus;
+          steps.push({ chipType: chip, label: 'Flint Chip', delta: `+${bonus}`, before, after: running });
+        }
+        break;
+      }
+      case ChipType.COAL: {
+        if (selectedCount === 1) {
+          running += 35;
+          steps.push({ chipType: chip, label: 'Coal Chip', delta: '+35', before, after: running });
+        }
+        break;
+      }
+      // ── Batch 2 — Uncommon ─────────────────────────────────────────────
+      case ChipType.IVORY: {
+        if (aceCount > 0) {
+          const bonus = aceCount * 25;
+          running += bonus;
+          steps.push({ chipType: chip, label: 'Ivory Chip', delta: `+${bonus}`, before, after: running });
+        }
+        break;
+      }
+      case ChipType.GRANITE: {
+        if (communityUsed === 0) {
+          running += 40;
+          steps.push({ chipType: chip, label: 'Granite Chip', delta: '+40', before, after: running });
+        }
+        break;
+      }
+      case ChipType.PYRITE: {
+        if (wallet >= 50) {
+          running = Math.floor(running * 1.2);
+          steps.push({ chipType: chip, label: 'Pyrite Chip', delta: '×1.2', before, after: running });
+        }
+        break;
+      }
+      case ChipType.TIDE: {
+        // Odd hands = 1st, 3rd, 5th... (handsPlayedThisRound is 0-indexed, so 0=1st hand)
+        if (handsPlayedThisRound % 2 === 0) {
+          running += 45;
+          steps.push({ chipType: chip, label: 'Tide Chip', delta: '+45', before, after: running });
+        }
+        break;
+      }
+      // ── Batch 2 — Rare ─────────────────────────────────────────────────
+      case ChipType.SHARD: {
+        if (handRankValue === 3) { // TWO_PAIR
+          running = Math.floor(running * 1.3);
+          steps.push({ chipType: chip, label: 'Shard Chip', delta: '×1.3', before, after: running });
+        } else if (handRankValue === 7) { // FULL_HOUSE
+          running = Math.floor(running * 1.6);
+          steps.push({ chipType: chip, label: 'Shard Chip', delta: '×1.6', before, after: running });
+        } else if (handRankValue === 8) { // FOUR_OF_A_KIND
+          running = Math.floor(running * 2.0);
+          steps.push({ chipType: chip, label: 'Shard Chip', delta: '×2.0', before, after: running });
+        }
+        break;
+      }
+      case ChipType.LICHEN: {
+        // ante - 1 = completed rounds (ante 1 = 0 completed, ante 2 = 1 completed, etc.)
+        const completedAntes = Math.max(0, ante - 1);
+        if (completedAntes > 0) {
+          const lichenMult = Math.pow(1.1, completedAntes);
+          running = Math.floor(running * lichenMult);
+          steps.push({ chipType: chip, label: 'Lichen Chip', delta: `×${lichenMult.toFixed(2)}`, before, after: running });
+        }
+        break;
+      }
+      // ── Batch 2 — Legendary ────────────────────────────────────────────
+      case ChipType.AURORA: {
+        const auroraMult = Math.pow(1.05, chipStackSize);
+        running = Math.floor(running * auroraMult);
+        steps.push({ chipType: chip, label: 'Aurora Chip', delta: `×${auroraMult.toFixed(2)}`, before, after: running });
+        break;
+      }
+      case ChipType.ECHO: {
+        // Find the chip directly before ECHO in the original chips array and re-apply it.
+        // We track this via the execList index.
+        const echoIdx = execList.indexOf(chip);
+        const prevChip = echoIdx > 0 ? execList[echoIdx - 1] : null;
+        if (prevChip && prevChip !== ChipType.ECHO && prevChip !== ChipType.MOONSTONE) {
+          // Re-push prevChip into execList for processing — handled by re-running the switch
+          // Simplest approach: push a second copy right after current position
+          // Since we can't modify execList mid-loop, we store it and process after
+          // Instead, duplicate the step value from the last step
+          const lastStep = steps.length > 0 ? steps[steps.length - 1] : null;
+          if (lastStep) {
+            const echoBefore = running;
+            const delta = lastStep.after - lastStep.before;
+            if (delta > 0) {
+              // Flat bonus echo
+              running += delta;
+              steps.push({ chipType: chip, label: `Echo (${lastStep.label})`, delta: `+${delta}`, before: echoBefore, after: running });
+            } else if (lastStep.after !== lastStep.before) {
+              // Multiplier echo — apply same ratio
+              const ratio = lastStep.after / (lastStep.before || 1);
+              running = Math.floor(running * ratio);
+              steps.push({ chipType: chip, label: `Echo (${lastStep.label})`, delta: `×${ratio.toFixed(2)}`, before: echoBefore, after: running });
+            }
+          }
+        }
         break;
       }
     }
