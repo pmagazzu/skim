@@ -186,6 +186,7 @@ export interface GameState {
   lastHandName: string | null;
   lastBonusDetail: string | null;
   consumableResult: { title: string; message: string } | null;
+  forgeResult: { card: Card; modifier: CardModifierValue } | null;
   roundHistory: RoundResult[];
   rouletteWins: number;
   handSize: number;
@@ -657,6 +658,7 @@ export const initialState: GameState = {
   rouletteWins: 0,
   handSize: HAND_SIZE,
   consumableResult: null,
+  forgeResult: null,
   difficulty: 'normal',
   availableBounties: [],
   activeBounties: [],
@@ -1130,7 +1132,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'DISMISS_RESULT':
-      return { ...state, consumableResult: null };
+      return { ...state, consumableResult: null, forgeResult: null };
 
     case 'BUY_ITEM': {
       const item = state.shopItems.find(i => i.id === action.itemId);
@@ -1184,10 +1186,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ownedDeck: newOwned,
         deck: newDeck,
         hand: newHand,
-        consumableResult: {
-          title: `🔨 Forged!`,
-          message: `Applied ${modifier} to ${target.rank === 14 ? 'A' : target.rank === 13 ? 'K' : target.rank === 12 ? 'Q' : target.rank === 11 ? 'J' : target.rank}${target.suit[0].toUpperCase()} — ${({ POLISHED:'+10 chips', SCARRED:'+15 chips', CHARGED:'Double pips', HOT:'×1.5 mult', WILD:'Any suit', VOLATILE:'+50/−20', GHOST:'Rank-invisible', CURSED:'+80 then burns', MIMIC:'Copies modifier' } as Record<string,string>)[modifier]}`,
-        },
+        forgeResult: { card: { ...target, modifier }, modifier },
       };
     }
 

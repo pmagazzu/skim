@@ -72,15 +72,16 @@ export function Card({ card, selected, onClick, disabled, animDelay, small }: Ca
         <div
           onClick={e => { e.stopPropagation(); setShowModTooltip(v => !v); }}
           style={{
-            position: 'absolute', top: -6, right: -6,
+            position: 'absolute', top: -8, right: -8,
             background: MODIFIER_COLOR[card.modifier] ?? '#fff',
-            borderRadius: '50%', width: 18, height: 18,
+            borderRadius: '50%', width: 26, height: 26,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 11, boxShadow: `0 0 8px ${MODIFIER_COLOR[card.modifier] ?? '#fff'}aa`,
-            border: '1px solid rgba(0,0,0,0.3)',
+            fontSize: 13, boxShadow: `0 0 12px ${MODIFIER_COLOR[card.modifier] ?? '#fff'}cc, 0 0 4px rgba(0,0,0,0.5)`,
+            border: '2px solid rgba(0,0,0,0.4)',
             zIndex: 10, cursor: 'pointer',
+            fontWeight: 900,
           }}>
-          {MODIFIER_LABEL[card.modifier].split(' ')[0]}
+          ✦
         </div>
       )}
       {/* Modifier tooltip */}

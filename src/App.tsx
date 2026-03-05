@@ -17,6 +17,7 @@ import DebugIndex from './pages/DebugIndex';
 import { Lobby } from './pages/Lobby';
 import { CoopGame } from './pages/CoopGame';
 import { PackOpenModal } from './components/PackOpenModal';
+import { ForgeResultModal } from './components/ForgeResultModal';
 import { OpponentArea } from './components/OpponentArea';
 import { DeckViewer } from './components/DeckViewer';
 import { UpgradeType } from './game/gameState';
@@ -741,6 +742,13 @@ function App() {
         onCatalog={() => setShowCatalog(true)}
       />
       {showCatalog && <DebugIndex onClose={() => setShowCatalog(false)} />}
+      {state.forgeResult && (
+        <ForgeResultModal
+          card={state.forgeResult.card}
+          modifier={state.forgeResult.modifier}
+          onDismiss={() => dispatch({ type: 'DISMISS_RESULT' })}
+        />
+      )}
       {state.pendingPackResult && (
         <PackOpenModal
           result={state.pendingPackResult}
