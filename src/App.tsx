@@ -264,6 +264,7 @@ function App() {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="vignette" />
+        <div className="crt-overlay" />
         <div style={{ width: '100%', maxWidth: 430, padding: '32px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28 }}>
           <div style={{ textAlign: 'center' }}>
             <div className="title-font gold-glow" style={{ fontSize: 80, letterSpacing: '0.14em', lineHeight: 1 }}>SKIM</div>
@@ -302,12 +303,18 @@ function App() {
 
   // ── Tutorial ──
   if (appScreen === 'tutorial') {
-    return <Tutorial onClose={() => setAppScreen('game')} />;
+    return (
+      <>
+        <div className="crt-overlay" />
+        <Tutorial onClose={() => setAppScreen('game')} />
+      </>
+    );
   }
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
       <div className="vignette" />
+      <div className="crt-overlay" />
       {/* Header — hidden during active gameplay to save vertical space */}
       <header className={`flex items-center justify-between px-4 py-3 border-b border-white/5 ${state.phase === 'selecting' || state.phase === 'score-review' ? 'hidden' : ''}`} style={{ maxWidth: 430, width: '100%', alignSelf: 'center', boxSizing: 'border-box' }}>
         <div className="flex items-center gap-3">
