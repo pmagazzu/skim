@@ -373,10 +373,7 @@ function App() {
           <div className="game-canvas" style={{ paddingTop: 24, paddingBottom: 24, gap: 20 }}>
 
             {/* Title */}
-            <div style={{ textAlign: 'center', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: 0, right: 0 }}>
-                <MenuButton onClick={() => setShowMenu(true)} />
-              </div>
+            <div style={{ textAlign: 'center' }}>
               <div className="title-font gold-glow" style={{ fontSize: 68, letterSpacing: '0.12em', lineHeight: 1 }}>SKIM</div>
               <div style={{ fontFamily: "'VT323',monospace", fontSize: 18, color: '#6b5a3e', marginTop: 6, letterSpacing: '0.08em' }}>
                 Fill the vault. Take your cut.

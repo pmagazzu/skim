@@ -152,7 +152,7 @@ export function Tutorial({ onClose }: TutorialProps) {
               <span style={{ fontSize: 19, color: '#fde68a' }}>You skim a cut of every hand for yourself</span>
             </div>
           </div>
-          <p style={{ fontSize: 18, color: '#6b5a3e' }}>3 levels per round · 3 rounds total · vault target rises each level</p>
+          <p style={{ fontSize: 18, color: '#6b5a3e' }}>3 levels per round · unlimited rounds · see how far you can get</p>
         </div>
       ),
     },
@@ -177,13 +177,13 @@ export function Tutorial({ onClose }: TutorialProps) {
           <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid #3a2e1e', borderRadius: 8, padding: '10px 14px' }}>
             <div style={{ fontSize: 18, color: '#4ade80', marginBottom: 6, fontWeight: 700 }}>🟢 COMMUNITY CARDS</div>
             <p style={{ fontSize: 18, color: '#9ca3af', lineHeight: 1.4 }}>
-              3 cards in the center are shared. Use them in your hand. When used, they auto-replace from your deck.
+              3 cards in the center are <strong style={{ color: '#4ade80' }}>shared with all players</strong>. Use them in your hand. When used, they auto-replace from the deck.
             </p>
           </div>
           <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid #3a2e1e', borderRadius: 8, padding: '10px 14px' }}>
             <div style={{ fontSize: 18, color: '#f59e0b', marginBottom: 4 }}>♻️ DISCARD</div>
             <p style={{ fontSize: 18, color: '#9ca3af', lineHeight: 1.4 }}>
-              2 free discards per round. More cost chips — and get pricier each time.
+              Discards <strong style={{ color: '#fbbf24' }}>your 5 cards AND all 3 community cards</strong>. 2 free per round — extra discards cost chips and get pricier each use.
             </p>
           </div>
         </div>
@@ -387,7 +387,45 @@ export function Tutorial({ onClose }: TutorialProps) {
       ),
     },
 
-    // 8 — TIPS
+    // 8 — HOW TO LOSE
+    {
+      title: 'HOW TO LOSE',
+      icon: '💀',
+      body: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <p style={{ fontSize: 20, color: '#d1d5db', lineHeight: 1.45 }}>
+            The run ends when either of these happens:
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '12px 14px' }}>
+              <div style={{ fontSize: 20, color: '#f87171', marginBottom: 6 }}>❌ Vault not filled</div>
+              <p style={{ fontSize: 18, color: '#9ca3af', lineHeight: 1.4 }}>
+                You run out of hands for the level without filling the vault target. Game over.
+              </p>
+            </div>
+            <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '12px 14px' }}>
+              <div style={{ fontSize: 20, color: '#f87171', marginBottom: 6 }}>🃏 Deck runs out</div>
+              <p style={{ fontSize: 18, color: '#9ca3af', lineHeight: 1.4 }}>
+                If your deck runs dry, you can't draw cards to play hands. This is why buying booster packs from the shop is critical — a bigger deck means more plays.
+              </p>
+            </div>
+          </div>
+          <div style={{ background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 10, padding: '12px 14px' }}>
+            <div style={{ fontSize: 20, color: '#fbbf24', marginBottom: 6 }}>💡 Stay alive longer</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <p style={{ fontSize: 17, color: '#9ca3af', lineHeight: 1.4 }}>• Buy deck packs in the shop — more cards = more hands available</p>
+              <p style={{ fontSize: 17, color: '#9ca3af', lineHeight: 1.4 }}>• Level up your best hands to score bigger with fewer plays</p>
+              <p style={{ fontSize: 17, color: '#9ca3af', lineHeight: 1.4 }}>• Build a strong chip stack to multiply your score</p>
+            </div>
+          </div>
+          <p style={{ fontSize: 18, color: '#6b5a3e' }}>
+            Rounds get harder as you progress — vault targets scale up. How far can you go?
+          </p>
+        </div>
+      ),
+    },
+
+    // 9 — TIPS
     {
       title: 'TIPS & TRICKS',
       icon: '💡',
