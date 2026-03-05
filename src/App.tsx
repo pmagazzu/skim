@@ -23,88 +23,86 @@ import { UpgradeType } from './game/gameState';
 
 type SortMode = 'dealt' | 'high' | 'low' | 'suit';
 
-// ── Dev / utility menu — always visible, bottom-left corner ──
-function DevMenu({ onDevWin, onCatalog }: { onDevWin: () => void; onCatalog: () => void }) {
-  const [open, setOpen] = useState(false);
+// ── Menu panel overlay — triggered by inline MENU buttons ──
+function MenuPanel({ open, onClose, onDevWin, onCatalog }: {
+  open: boolean; onClose: () => void; onDevWin: () => void; onCatalog: () => void;
+}) {
+  if (!open) return null;
   return (
     <>
-      {/* Backdrop */}
-      {open && (
-        <div
-          onClick={() => setOpen(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 290, background: 'rgba(0,0,0,0.5)' }}
-        />
-      )}
-
-      {/* Slide-up panel */}
-      {open && (
-        <div style={{
-          position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
-          zIndex: 295, width: 'min(320px, 90vw)',
-          background: '#0d0a07', border: '1px solid #3a2e1e',
-          borderRadius: 14, padding: '16px 16px 12px',
-          boxShadow: '0 -4px 32px rgba(0,0,0,0.8)',
-        }}>
-          <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#4b5563', textAlign: 'center', marginBottom: 14, letterSpacing: '0.12em' }}>
-            ─── MENU ───
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-
-            {/* DEV WIN — arcade blue button */}
-            <button
-              onClick={() => { setOpen(false); onDevWin(); }}
-              style={{
-                width: '100%', padding: '14px 0', borderRadius: 10, cursor: 'pointer',
-                background: 'linear-gradient(145deg,#1e3a8a,#1d4ed8)',
-                border: '2px solid #3b82f6',
-                boxShadow: '0 4px 0 #1e3a8a, 0 6px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)',
-                color: '#bfdbfe',
-                fontFamily: "'Press Start 2P',monospace", fontSize: 11,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                transition: 'transform 0.08s, box-shadow 0.08s',
-              }}
-              onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(3px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 1px 0 #1e3a8a,0 2px 6px rgba(0,0,0,0.5)'; }}
-              onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = ''; (e.currentTarget as HTMLButtonElement).style.boxShadow = ''; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = ''; (e.currentTarget as HTMLButtonElement).style.boxShadow = ''; }}
-            >
-              <span style={{ fontSize: 18 }}>⚡</span> DEV WIN  +1000c
-            </button>
-
-            {/* Catalog */}
-            <button
-              onClick={() => { setOpen(false); onCatalog(); }}
-              style={{
-                width: '100%', padding: '12px 0', borderRadius: 10, cursor: 'pointer',
-                background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.3)',
-                color: '#93c5fd',
-                fontFamily: "'VT323',monospace", fontSize: 20,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              }}
-            >
-              📖 CHIP CATALOG
-            </button>
-
-          </div>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 290, background: 'rgba(0,0,0,0.55)' }} />
+      <div style={{
+        position: 'fixed', bottom: '50%', left: '50%',
+        transform: 'translate(-50%, 50%)',
+        zIndex: 295, width: 'min(340px, 92vw)',
+        background: '#0d0a07', border: '1px solid #3a2e1e',
+        borderRadius: 16, padding: '20px 18px 18px',
+        boxShadow: '0 8px 48px rgba(0,0,0,0.9)',
+      }}>
+        <div style={{ fontFamily: "'VT323',monospace", fontSize: 22, color: '#ca8a04', textAlign: 'center', marginBottom: 16, letterSpacing: '0.14em' }}>
+          ─── MENU ───
         </div>
-      )}
-
-      {/* The persistent menu button — bottom-left */}
-      <button
-        onClick={() => setOpen(v => !v)}
-        style={{
-          position: 'fixed', bottom: 20, left: 20, zIndex: 300,
-          width: 52, height: 52, borderRadius: 12,
-          background: open ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.6)',
-          border: `1px solid ${open ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'}`,
-          boxShadow: '0 2px 12px rgba(0,0,0,0.6)',
-          color: '#6b7280', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 22, transition: 'all 0.15s',
-        }}
-      >
-        {open ? '✕' : '☰'}
-      </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <button
+            onClick={() => { onClose(); onDevWin(); }}
+            style={{
+              width: '100%', padding: '16px 0', borderRadius: 12, cursor: 'pointer',
+              background: 'linear-gradient(145deg,#1e3a8a,#1d4ed8)',
+              border: '2px solid #3b82f6',
+              boxShadow: '0 4px 0 #1e3a8a, 0 6px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)',
+              color: '#bfdbfe', fontFamily: "'Press Start 2P',monospace", fontSize: 12,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              transition: 'transform 0.08s, box-shadow 0.08s',
+            }}
+            onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(3px)'; }}
+            onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = ''; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = ''; }}
+          >
+            <span style={{ fontSize: 20 }}>⚡</span> DEV WIN +1000c
+          </button>
+          <button
+            onClick={() => { onClose(); onCatalog(); }}
+            style={{
+              width: '100%', padding: '14px 0', borderRadius: 12, cursor: 'pointer',
+              background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.35)',
+              color: '#93c5fd', fontFamily: "'VT323',monospace", fontSize: 22,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
+          >
+            📖 CHIP CATALOG
+          </button>
+          <button
+            onClick={onClose}
+            style={{
+              width: '100%', padding: '10px 0', borderRadius: 10, cursor: 'pointer',
+              background: 'transparent', border: '1px solid #2a2520',
+              color: '#4b5563', fontFamily: "'VT323',monospace", fontSize: 19,
+            }}
+          >
+            CLOSE
+          </button>
+        </div>
+      </div>
     </>
+  );
+}
+
+// Shared inline MENU button style
+function MenuButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        fontFamily: "'VT323',monospace", fontSize: 17,
+        padding: '5px 14px', borderRadius: 7, cursor: 'pointer',
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        color: '#6b7280', letterSpacing: '0.08em',
+        flexShrink: 0,
+      }}
+    >
+      MENU
+    </button>
   );
 }
 
@@ -116,6 +114,7 @@ function App() {
   const [sortMode, setSortMode] = useState<SortMode>('dealt');
   const [showCatalog, setShowCatalog] = useState(false);
   const [showDeckViewer, setShowDeckViewer] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [turnTimer, setTurnTimer] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerWarnedHalf = useRef(false);
@@ -258,7 +257,7 @@ function App() {
       )}
 
       {/* Header — hidden during active gameplay to save vertical space */}
-      <header className={`flex items-center justify-between px-4 py-3 border-b border-white/5 ${state.phase === 'selecting' || state.phase === 'score-review' ? 'hidden' : ''}`}>
+      <header className={`flex items-center justify-between px-4 py-3 border-b border-white/5 ${state.phase === 'selecting' || state.phase === 'score-review' ? 'hidden' : ''}`} style={{ maxWidth: 430, width: '100%', alignSelf: 'center', boxSizing: 'border-box' }}>
         <div className="flex items-center gap-3">
           <div className="title-font text-2xl gold-glow tracking-widest">SKIM</div>
           <button onClick={() => setAppMode('lobby')} style={{ fontFamily: "'Press Start 2P',monospace", fontSize: 7, background: 'transparent', border: '1px solid #3a2e1e', borderRadius: 4, color: '#6b5a3e', padding: '3px 7px', cursor: 'pointer', letterSpacing: '0.05em' }}>
@@ -310,6 +309,7 @@ function App() {
             </div>
           </div>
         )}
+        <MenuButton onClick={() => setShowMenu(true)} />
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-start p-0 w-full overflow-x-hidden">
@@ -319,7 +319,10 @@ function App() {
           <div className="game-canvas" style={{ paddingTop: 24, paddingBottom: 24, gap: 20 }}>
 
             {/* Title */}
-            <div style={{ textAlign: 'center' }}>
+            <div style={{ textAlign: 'center', position: 'relative' }}>
+              <div style={{ position: 'absolute', top: 0, right: 0 }}>
+                <MenuButton onClick={() => setShowMenu(true)} />
+              </div>
               <div className="title-font gold-glow" style={{ fontSize: 68, letterSpacing: '0.12em', lineHeight: 1 }}>SKIM</div>
               <div style={{ fontFamily: "'VT323',monospace", fontSize: 18, color: '#6b5a3e', marginTop: 6, letterSpacing: '0.08em' }}>
                 Fill the vault. Take your cut.
@@ -436,8 +439,11 @@ function App() {
 
                 {/* Strip 2: round label | wallet | skim rate */}
                 <div className="felt-top-row-strip">
-                  <div style={{ fontFamily: "'VT323',monospace", fontSize: 22, color: '#ca8a04', letterSpacing: '0.06em' }}>
-                    Round {state.ante} · Lvl {state.roundInAnte}/3
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ fontFamily: "'VT323',monospace", fontSize: 22, color: '#ca8a04', letterSpacing: '0.06em' }}>
+                      Round {state.ante} · Lvl {state.roundInAnte}/3
+                    </div>
+                    <MenuButton onClick={() => setShowMenu(true)} />
                   </div>
                   <OpponentArea />
                   <SkimLedger
@@ -727,8 +733,10 @@ function App() {
         />
       )}
 
-      {/* ── Persistent menu button (always visible) ── */}
-      <DevMenu
+      {/* ── Menu panel overlay ── */}
+      <MenuPanel
+        open={showMenu}
+        onClose={() => setShowMenu(false)}
         onDevWin={() => dispatch({ type: 'DEBUG_WIN' })}
         onCatalog={() => setShowCatalog(true)}
       />
