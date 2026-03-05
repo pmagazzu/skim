@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChipArt } from './ChipArt';
-import { rankName, suitSymbol, isRed } from '../game/deck';
-import type { Card } from '../game/deck';
+import { rankName, suitSymbol } from '../game/deck';
 
 // ── Mini card for tutorial use ──
 function TCard({ rank, suit, selected, small }: { rank: number; suit: string; selected?: boolean; small?: boolean }) {
@@ -418,7 +417,7 @@ export function Tutorial({ onClose }: TutorialProps) {
   const isLast = page === slides.length - 1;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.97)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '16px', overflowY: 'auto' }}>
+    <div style={{ minHeight: '100vh', background: '#0a0806', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '16px', overflowY: 'auto' }}>
       <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 24 }}>
 
         {/* Progress dots */}

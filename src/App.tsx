@@ -303,12 +303,7 @@ function App() {
 
   // ── Tutorial ──
   if (appScreen === 'tutorial') {
-    return (
-      <>
-        <div className="crt-overlay" />
-        <Tutorial onClose={() => setAppScreen('game')} />
-      </>
-    );
+    return <Tutorial onClose={() => setAppScreen('game')} />;
   }
 
   return (
