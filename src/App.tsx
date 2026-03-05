@@ -23,6 +23,91 @@ import { UpgradeType } from './game/gameState';
 
 type SortMode = 'dealt' | 'high' | 'low' | 'suit';
 
+// ── Dev / utility menu — always visible, bottom-left corner ──
+function DevMenu({ onDevWin, onCatalog }: { onDevWin: () => void; onCatalog: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      {/* Backdrop */}
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 290, background: 'rgba(0,0,0,0.5)' }}
+        />
+      )}
+
+      {/* Slide-up panel */}
+      {open && (
+        <div style={{
+          position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 295, width: 'min(320px, 90vw)',
+          background: '#0d0a07', border: '1px solid #3a2e1e',
+          borderRadius: 14, padding: '16px 16px 12px',
+          boxShadow: '0 -4px 32px rgba(0,0,0,0.8)',
+        }}>
+          <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#4b5563', textAlign: 'center', marginBottom: 14, letterSpacing: '0.12em' }}>
+            ─── MENU ───
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+            {/* DEV WIN — arcade blue button */}
+            <button
+              onClick={() => { setOpen(false); onDevWin(); }}
+              style={{
+                width: '100%', padding: '14px 0', borderRadius: 10, cursor: 'pointer',
+                background: 'linear-gradient(145deg,#1e3a8a,#1d4ed8)',
+                border: '2px solid #3b82f6',
+                boxShadow: '0 4px 0 #1e3a8a, 0 6px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)',
+                color: '#bfdbfe',
+                fontFamily: "'Press Start 2P',monospace", fontSize: 11,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                transition: 'transform 0.08s, box-shadow 0.08s',
+              }}
+              onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(3px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 1px 0 #1e3a8a,0 2px 6px rgba(0,0,0,0.5)'; }}
+              onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = ''; (e.currentTarget as HTMLButtonElement).style.boxShadow = ''; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = ''; (e.currentTarget as HTMLButtonElement).style.boxShadow = ''; }}
+            >
+              <span style={{ fontSize: 18 }}>⚡</span> DEV WIN  +1000c
+            </button>
+
+            {/* Catalog */}
+            <button
+              onClick={() => { setOpen(false); onCatalog(); }}
+              style={{
+                width: '100%', padding: '12px 0', borderRadius: 10, cursor: 'pointer',
+                background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.3)',
+                color: '#93c5fd',
+                fontFamily: "'VT323',monospace", fontSize: 20,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              📖 CHIP CATALOG
+            </button>
+
+          </div>
+        </div>
+      )}
+
+      {/* The persistent menu button — bottom-left */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          position: 'fixed', bottom: 20, left: 20, zIndex: 300,
+          width: 52, height: 52, borderRadius: 12,
+          background: open ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.6)',
+          border: `1px solid ${open ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'}`,
+          boxShadow: '0 2px 12px rgba(0,0,0,0.6)',
+          color: '#6b7280', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 22, transition: 'all 0.15s',
+        }}
+      >
+        {open ? '✕' : '☰'}
+      </button>
+    </>
+  );
+}
+
 function App() {
   const [appMode, setAppMode] = useState<'solo' | 'lobby' | 'coop'>('solo');
   const [coopRoom, setCoopRoom] = useState<{ code: string; playerIndex: 0 | 1 } | null>(null);
@@ -642,61 +727,11 @@ function App() {
         />
       )}
 
-      {/* Debug buttons */}
-      {true && (
-        <>
-          {/* Big arcade DEV WIN button */}
-          <button
-            onClick={() => dispatch({ type: 'DEBUG_WIN' })}
-            style={{
-              position: 'fixed',
-              bottom: 24,
-              right: 20,
-              zIndex: 300,
-              width: 80,
-              height: 80,
-              borderRadius: 14,
-              background: 'linear-gradient(145deg, #1e40af, #1d4ed8, #1e3a8a)',
-              border: '3px solid #3b82f6',
-              boxShadow: '0 0 0 2px #1e3a8a, 0 6px 0 #1e3a8a, 0 8px 16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)',
-              color: '#bfdbfe',
-              fontFamily: "'Press Start 2P', monospace",
-              fontSize: 9,
-              lineHeight: 1.4,
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 4,
-              transition: 'transform 0.08s, box-shadow 0.08s',
-              userSelect: 'none',
-            }}
-            onMouseDown={e => {
-              (e.currentTarget as HTMLElement).style.transform = 'translateY(4px)';
-              (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 2px #1e3a8a, 0 2px 0 #1e3a8a, 0 4px 8px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)';
-            }}
-            onMouseUp={e => {
-              (e.currentTarget as HTMLElement).style.transform = '';
-              (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 2px #1e3a8a, 0 6px 0 #1e3a8a, 0 8px 16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.transform = '';
-              (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 2px #1e3a8a, 0 6px 0 #1e3a8a, 0 8px 16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)';
-            }}
-          >
-            <span style={{ fontSize: 22 }}>⚡</span>
-            <span>DEV</span>
-            <span>WIN</span>
-          </button>
-          <button
-            onClick={() => setShowCatalog(true)}
-            className="fixed bottom-4 right-28 z-50 text-xs px-3 py-1.5 rounded bg-blue-500/20 border border-blue-600/40 text-blue-400 hover:bg-blue-500/40 transition-all"
-          >
-            📖 CATALOG
-          </button>
-        </>
-      )}
+      {/* ── Persistent menu button (always visible) ── */}
+      <DevMenu
+        onDevWin={() => dispatch({ type: 'DEBUG_WIN' })}
+        onCatalog={() => setShowCatalog(true)}
+      />
       {showCatalog && <DebugIndex onClose={() => setShowCatalog(false)} />}
       {state.pendingPackResult && (
         <PackOpenModal
