@@ -14,14 +14,11 @@ interface ChipStackProps {
 }
 
 export function ChipStack({ chips, blackChipUsed, lastFiredChips = [], canTip = false, onReorder, onTipChip }: ChipStackProps) {
+  const [pendingSwap, setPendingSwap] = useState<number | null>(null);
   const [tooltip, setTooltip] = useState<number | null>(null);
-  const [pendingSwap, setPendingSwap] = useState<number | null>(null); // tap-to-swap state
   const [fireCount, setFireCount] = useState(0);
   const prevFired = useRef<string[]>([]);
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Close tooltip on outside tap
-  const closeTooltip = useCallback(() => { setTooltip(null); setPendingSwap(null); }, []);
+  const lastTapRef = useRef<{ index: number; time: number } | null>(null);
 
   useEffect(() => {
     if (lastFiredChips.length > 0 && lastFiredChips !== prevFired.current) {
@@ -30,33 +27,55 @@ export function ChipStack({ chips, blackChipUsed, lastFiredChips = [], canTip = 
     }
   }, [lastFiredChips]);
 
-  if (chips.length === 0) return null;
+  const closeTooltip = useCallback(() => setTooltip(null), []);
 
   function handleChipTap(i: number) {
-    // Tap-to-swap: first tap picks up, second tap on different chip swaps
-    if (pendingSwap === null) {
-      setPendingSwap(i);
+    const now = Date.now();
+    const last = lastTapRef.current;
+
+    // Double-tap same chip → show tooltip (and cancel any pending swap)
+    if (last && last.index === i && now - last.time < 400) {
+      lastTapRef.current = null;
+      setPendingSwap(null);
       setTooltip(i);
-    } else if (pendingSwap === i) {
-      // Tap same chip — cancel swap, show/hide tooltip
-      setPendingSwap(null);
-      setTooltip(tooltip === i ? null : i);
-    } else {
-      // Tap different chip — perform swap
-      onReorder(pendingSwap, i);
-      setPendingSwap(null);
-      setTooltip(null);
+      return;
     }
+
+    lastTapRef.current = { index: i, time: now };
+
+    // If a swap is pending
+    if (pendingSwap !== null) {
+      if (pendingSwap === i) {
+        // Tap same chip → cancel swap
+        setPendingSwap(null);
+      } else {
+        // Tap different chip → perform swap
+        onReorder(pendingSwap, i);
+        setPendingSwap(null);
+      }
+      return;
+    }
+
+    // First tap → enter swap mode (pick up chip)
+    setPendingSwap(i);
   }
 
-  const cancelHide = () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
-
-  // Which chip is showing tooltip (for fixed overlay)
   const tooltipChip = tooltip !== null ? chips[tooltip] : null;
   const tooltipChipData = tooltipChip ? getChip(tooltipChip) : null;
 
   return (
     <>
+      {/* Swap mode hint banner */}
+      {pendingSwap !== null && (
+        <div style={{
+          width: '100%', textAlign: 'center',
+          fontFamily: "'VT323',monospace", fontSize: 17, color: '#fbbf24',
+          paddingBottom: 2,
+        }}>
+          ↔ tap another chip to swap · tap same to cancel
+        </div>
+      )}
+
       <div className="flex flex-row flex-wrap gap-2 items-center justify-center">
         {chips.map((type, i) => {
           const chip = getChip(type);
@@ -67,32 +86,61 @@ export function ChipStack({ chips, blackChipUsed, lastFiredChips = [], canTip = 
           return (
             <div
               key={`${type}-${i}`}
-              className="relative"
+              className="relative flex flex-col items-center"
               onClick={() => handleChipTap(i)}
+              style={{ cursor: 'pointer' }}
             >
               <div className={[
-                'cursor-pointer select-none transition-transform',
-                isPendingSwap ? 'scale-125 ring-2 ring-amber-400 rounded-full' : dimmed ? '' : 'active:scale-90',
-              ].join(' ')}>
+                'select-none transition-transform',
+                isPendingSwap ? 'scale-125' : 'active:scale-90',
+              ].join(' ')}
+                style={{
+                  filter: isPendingSwap ? 'drop-shadow(0 0 10px #fbbf24)' : 'none',
+                  transition: 'transform 0.15s, filter 0.15s',
+                }}
+              >
                 <ChipArt
                   type={type}
                   size={48}
-                  dimmed={dimmed}
+                  dimmed={dimmed && !isPendingSwap}
                   fired={fired}
                   fireKey={fired ? `fired-${i}-${fireCount}` : `${type}-${i}`}
                 />
               </div>
-              {isPendingSwap && (
-                <div style={{ position: 'absolute', bottom: -18, left: '50%', transform: 'translateX(-50%)', fontFamily: "'VT323',monospace", fontSize: 12, color: '#fbbf24', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
-                  tap to swap
-                </div>
+
+              {/* Swap target ring */}
+              {pendingSwap !== null && pendingSwap !== i && (
+                <div style={{
+                  position: 'absolute', inset: -4, borderRadius: '50%',
+                  border: '2px dashed #fbbf2466',
+                  pointerEvents: 'none',
+                  animation: 'spin 2s linear infinite',
+                }} />
               )}
+
+              {/* Small info label below each chip */}
+              <div style={{
+                fontFamily: "'VT323',monospace", fontSize: 13, color: '#4b5563',
+                marginTop: 2, textAlign: 'center', lineHeight: 1,
+              }}>
+                {chip.name.split(' ')[0]}
+              </div>
             </div>
           );
         })}
       </div>
 
-      {/* Fixed bottom-sheet tooltip — escapes all overflow clipping */}
+      {/* Double-tap hint when not in swap mode */}
+      {pendingSwap === null && chips.length > 0 && (
+        <div style={{
+          fontFamily: "'VT323',monospace", fontSize: 15, color: '#374151',
+          textAlign: 'center', marginTop: 2,
+        }}>
+          tap to swap · double-tap for info
+        </div>
+      )}
+
+      {/* Tooltip bottom-sheet — shown on double-tap */}
       {tooltip !== null && tooltipChipData && tooltipChip && (
         <div
           onClick={closeTooltip}
@@ -109,7 +157,6 @@ export function ChipStack({ chips, blackChipUsed, lastFiredChips = [], canTip = 
               boxShadow: '0 0 32px rgba(0,0,0,0.8)',
             }}
             onClick={e => e.stopPropagation()}
-
           >
             <div style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: '#fbbf24', marginBottom: 4 }}>{tooltipChipData.name}</div>
             {tooltipChipData.rarity && (
@@ -138,17 +185,16 @@ export function ChipStack({ chips, blackChipUsed, lastFiredChips = [], canTip = 
                 </button>
               </div>
             )}
-            {chips.length > 1 && (
-              <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#4b5563', marginTop: 8, textAlign: 'center' }}>
-                {pendingSwap !== null ? 'tap another chip to swap position' : 'tap chip to pick up & reorder'}
-              </div>
-            )}
-            <div style={{ fontFamily: "'VT323',monospace", fontSize: 13, color: '#374151', marginTop: 6, textAlign: 'center' }}>
+            <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#374151', marginTop: 8, textAlign: 'center' }}>
               tap outside to close
             </div>
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </>
   );
 }
