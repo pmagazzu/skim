@@ -519,6 +519,7 @@ function App() {
 
         {/* SHOP */}
         {state.phase === 'shop' && (
+          <div className="game-canvas">
           <Shop
             items={state.shopItems}
             personalChips={state.personalChips}
@@ -546,6 +547,7 @@ function App() {
             onViewDeck={() => setShowDeckViewer(true)}
             onEndShop={() => dispatch({ type: 'END_SHOP' })}
           />
+          </div>
         )}
 
         {/* GAME OVER */}

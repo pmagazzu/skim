@@ -202,7 +202,7 @@ export function Shop({
   const packItems    = items.filter(i => i.type === 'pack');
 
   return (
-    <div className="flex flex-col gap-4 p-4 w-full mx-auto" style={{ overflowY: 'visible', maxWidth: '100%' }}>
+    <div className="flex flex-col gap-4 p-3 w-full" style={{ overflowY: 'visible' }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="title-font text-2xl gold-glow tracking-widest">— SHOP —</div>
