@@ -271,12 +271,12 @@ function App() {
           <div className="flex items-center gap-3">
             {/* Round indicator */}
             <div className="flex flex-col items-center">
-              <div className="text-xs text-gray-600 uppercase tracking-widest">Round</div>
+              <div className="text-sm text-gray-600 uppercase tracking-widest">Round</div>
               <div className="title-font text-lg text-amber-400">{state.ante}</div>
             </div>
             {/* Level pips */}
             <div className="flex flex-col items-center gap-1">
-              <div className="text-xs text-gray-600 uppercase tracking-widest">Level</div>
+              <div className="text-sm text-gray-600 uppercase tracking-widest">Level</div>
               <div className="flex gap-1.5">
                 {[1, 2, 3].map(r => (
                   <div
@@ -295,17 +295,17 @@ function App() {
             {/* Rounds beaten */}
             {state.ante > 1 && (
               <div className="flex flex-col items-center">
-                <div className="text-xs text-gray-600 uppercase tracking-widest">Cleared</div>
+                <div className="text-sm text-gray-600 uppercase tracking-widest">Cleared</div>
                 <div className="flex gap-1">
                   {Array.from({ length: state.ante - 1 }).map((_, i) => (
-                    <span key={i} className="text-emerald-500 text-xs">✦</span>
+                    <span key={i} className="text-emerald-500 text-sm">✦</span>
                   ))}
                 </div>
               </div>
             )}
             <div className="w-px h-8 bg-white/10" />
             <div className="flex flex-col items-end">
-              <div className="text-xs text-gray-600">Bank</div>
+              <div className="text-sm text-gray-600">Bank</div>
               <div className="gold-glow font-bold chip-counter text-sm">{state.personalChips.toLocaleString()}</div>
             </div>
           </div>
@@ -320,7 +320,7 @@ function App() {
 
             {/* Title */}
             <div style={{ textAlign: 'center' }}>
-              <div className="title-font gold-glow" style={{ fontSize: 56, letterSpacing: '0.12em', lineHeight: 1 }}>SKIM</div>
+              <div className="title-font gold-glow" style={{ fontSize: 68, letterSpacing: '0.12em', lineHeight: 1 }}>SKIM</div>
               <div style={{ fontFamily: "'VT323',monospace", fontSize: 18, color: '#6b5a3e', marginTop: 6, letterSpacing: '0.08em' }}>
                 Fill the vault. Take your cut.
               </div>
@@ -533,7 +533,7 @@ function App() {
                     />
                   </div>
                   {state.tipBonus && (
-                    <div className="text-xs text-center px-3 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-amber-300 animate-pulse" style={{ fontFamily: "'VT323',monospace", fontSize: 12, margin: '2px 0' }}>
+                    <div className="text-sm text-center px-3 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-amber-300 animate-pulse" style={{ fontFamily: "'VT323',monospace", fontSize: 12, margin: '2px 0' }}>
                       🎯 TIP ACTIVE: {state.tipBonus.label}
                     </div>
                   )}

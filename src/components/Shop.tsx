@@ -50,7 +50,7 @@ function RarityBadge({ rarity }: { rarity?: string }) {
   if (!rarity) return null;
   const label = RARITY_LABELS[rarity as keyof typeof RARITY_LABELS] ?? rarity;
   const color = RARITY_COLORS[rarity as keyof typeof RARITY_COLORS] ?? 'text-gray-400';
-  return <span className={`text-xs font-bold ${color}`}>{label}</span>;
+  return <span className={`text-sm font-bold ${color}`}>{label}</span>;
 }
 
 function ShopCard({ item, canBuy, full, onBuy, lowCardCount = 0 }: {
@@ -77,11 +77,11 @@ function ShopCard({ item, canBuy, full, onBuy, lowCardCount = 0 }: {
         </div>
       </div>
       {isPack && (
-        <div className="text-xs text-gray-600 flex items-center gap-1">
+        <div className="text-sm text-gray-600 flex items-center gap-1">
           <span>Your deck:</span>
           <span className={lowCardCount > 10 ? 'text-amber-600' : 'text-gray-500'}>{lowCardCount} low cards</span>
           {(['FACE_UPGRADE', 'ROYAL_UPGRADE', 'PAIR_UPGRADE'] as string[]).includes(item.packType ?? '') && lowCardCount === 0 && (
-            <span className="text-red-600 text-xs">· none to upgrade</span>
+            <span className="text-red-600 text-sm">· none to upgrade</span>
           )}
         </div>
       )}
@@ -106,15 +106,15 @@ function BountyCard({ bounty, canAfford, onToggle }: { bounty: Bounty; canAfford
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1">
           <div className="text-amber-200 font-semibold text-sm">{bounty.title}</div>
-          <div className="text-gray-500 text-xs mt-0.5 leading-relaxed">{bounty.description}</div>
+          <div className="text-gray-500 text-sm mt-0.5 leading-relaxed">{bounty.description}</div>
         </div>
-        <div className={['text-xs px-2 py-1 rounded border shrink-0', bounty.accepted ? 'border-amber-600 text-amber-400 bg-amber-950/40' : 'border-gray-700 text-gray-600'].join(' ')}>
+        <div className={['text-sm px-2 py-1 rounded border shrink-0', bounty.accepted ? 'border-amber-600 text-amber-400 bg-amber-950/40' : 'border-gray-700 text-gray-600'].join(' ')}>
           {bounty.accepted ? '✓ ON' : 'OFF'}
         </div>
       </div>
       <div className="mt-2 flex items-center justify-between">
-        <span className="text-xs text-emerald-500 font-semibold">🎁 {bounty.rewardLabel}</span>
-        <span className={`text-xs font-semibold ${bounty.accepted ? 'text-gray-600 line-through' : 'text-amber-600'}`}>
+        <span className="text-sm text-emerald-500 font-semibold">🎁 {bounty.rewardLabel}</span>
+        <span className={`text-sm font-semibold ${bounty.accepted ? 'text-gray-600 line-through' : 'text-amber-600'}`}>
           {bounty.accepted ? `refund ${fee}c` : `${fee}c to accept`}
         </span>
       </div>
@@ -183,7 +183,7 @@ function TabButton({ label, active, onClick, badge }: { label: string; active: b
     <button onClick={onClick} style={{ whiteSpace: 'nowrap', flexShrink: 0, fontSize: 11, padding: '8px 12px', minHeight: 40 }} className={['relative rounded transition-all', active ? 'btn-primary' : 'btn-secondary'].join(' ')}>
       {label}
       {badge !== undefined && badge > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-amber-500 text-black text-xs flex items-center justify-center font-bold" style={{ fontSize: 9 }}>{badge}</span>
+        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-amber-500 text-black text-sm flex items-center justify-center font-bold" style={{ fontSize: 9 }}>{badge}</span>
       )}
     </button>
   );
@@ -348,16 +348,16 @@ export function Shop({
                   <span className="text-2xl">{def.icon}</span>
                   <div className="flex-1">
                     <div className="text-amber-200 font-semibold text-sm">{def.label}</div>
-                    <div className="text-gray-500 text-xs leading-relaxed">{def.description}</div>
+                    <div className="text-gray-500 text-sm leading-relaxed">{def.description}</div>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className={owned ? 'text-emerald-500 text-xs font-bold' : 'gold-glow font-bold text-sm chip-counter'}>
+                  <span className={owned ? 'text-emerald-500 text-sm font-bold' : 'gold-glow font-bold text-sm chip-counter'}>
                     {owned ? '✓ OWNED' : `${discountedCost}c`}
                   </span>
                   {!owned && (
                     <button onClick={canBuy ? () => onBuyUpgrade(key) : undefined} disabled={!canBuy}
-                      className={canBuy ? 'btn-primary text-xs px-4 py-1.5' : 'btn-secondary text-xs px-4 py-1.5 opacity-40 cursor-default'}>
+                      className={canBuy ? 'btn-primary text-sm px-4 py-1.5' : 'btn-secondary text-sm px-4 py-1.5 opacity-40 cursor-default'}>
                       BUY
                     </button>
                   )}
@@ -385,13 +385,13 @@ export function Shop({
             return (
               <div key={rarity} className="shop-card flex flex-col gap-2">
                 <div style={{ color, fontFamily: "'Press Start 2P',monospace", fontSize: 9 }}>{label}</div>
-                <div className="text-gray-500 text-xs">{desc}</div>
+                <div className="text-gray-500 text-sm">{desc}</div>
                 <div className="flex items-center justify-between">
                   <span className="gold-glow font-bold text-sm chip-counter">{cost}c</span>
                   <button
                     onClick={canAfford ? () => onBuyForge(rarity) : undefined}
                     disabled={!canAfford}
-                    className={canAfford ? 'btn-primary text-xs px-4 py-1.5' : 'btn-secondary text-xs px-4 py-1.5 opacity-40 cursor-default'}
+                    className={canAfford ? 'btn-primary text-sm px-4 py-1.5' : 'btn-secondary text-sm px-4 py-1.5 opacity-40 cursor-default'}
                   >
                     FORGE
                   </button>

@@ -98,7 +98,7 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
           <span className="scratch-banner-ticket">🎫</span>
           <span>SCRATCH ACTIVE</span>
           <span className="scratch-banner-mult">×{scratchMultiplier}</span>
-          <span className="text-orange-300 opacity-60 text-xs">next hand scores {scratchMultiplier}× chips</span>
+          <span className="text-orange-300 opacity-60 text-sm">next hand scores {scratchMultiplier}× chips</span>
         </div>
       )}
 
@@ -156,10 +156,10 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
       </div>
 
       {!canDiscard && handsLeft <= 1 && (
-        <div className="text-xs text-red-600">Last hand — can't discard</div>
+        <div className="text-sm text-red-600">Last hand — can't discard</div>
       )}
       {!canDiscard && isPaidDiscard && !canAffordPaidDiscard && (
-        <div className="text-xs text-red-600">Can't afford discard ({extraDiscardCost}c)</div>
+        <div className="text-sm text-red-600">Can't afford discard ({extraDiscardCost}c)</div>
       )}
     </div>
   );

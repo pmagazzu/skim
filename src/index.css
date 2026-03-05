@@ -98,14 +98,14 @@ body {
   background-color: var(--bg);
   color: var(--text-primary);
   font-family: 'VT323', 'Courier New', monospace;
-  font-size: 20px;
+  font-size: 24px;
   letter-spacing: 0.02em;
   min-height: 100vh;
   overflow-x: hidden;
 }
 
 @media (min-width: 640px) {
-  body { font-size: 22px; }
+  body { font-size: 26px; }
 }
 
 /* ── CRT / Retro overlays ── */
@@ -275,14 +275,14 @@ body::after {
   border: 1px solid rgba(249,115,22,0.5);
   background: rgba(124,45,18,0.25);
   font-family: 'VT323', monospace;
-  font-size: 15px;
+  font-size: 19px;
   letter-spacing: 0.1em;
   color: #fb923c;
   animation: scratch-glow 1.4s ease-in-out infinite;
 }
-.scratch-banner-ticket { font-size: 18px; }
+.scratch-banner-ticket { font-size: 23px; }
 .scratch-banner-mult {
-  font-size: 22px;
+  font-size: 28px;
   color: #fdba74;
   text-shadow: 0 0 8px rgba(253,186,116,0.7);
 }
