@@ -231,14 +231,22 @@ function App() {
 
         {/* DIFFICULTY SELECT */}
         {state.phase === 'difficulty' && (
-          <div className="flex flex-col items-center gap-6 w-full max-w-sm text-center px-4">
-            <div className="title-font text-4xl gold-glow tracking-widest">SKIM</div>
-            <p className="text-gray-500 text-sm">Fill the vault. Take your cut. Try not to get caught.</p>
+          <div className="game-canvas" style={{ paddingTop: 24, paddingBottom: 24, gap: 20 }}>
+
+            {/* Title */}
+            <div style={{ textAlign: 'center' }}>
+              <div className="title-font gold-glow" style={{ fontSize: 56, letterSpacing: '0.12em', lineHeight: 1 }}>SKIM</div>
+              <div style={{ fontFamily: "'VT323',monospace", fontSize: 18, color: '#6b5a3e', marginTop: 6, letterSpacing: '0.08em' }}>
+                Fill the vault. Take your cut.
+              </div>
+            </div>
 
             {/* Theme picker */}
-            <div className="w-full">
-              <div style={{ fontFamily: "'VT323',monospace", fontSize: 15, color: 'var(--text-dim)', letterSpacing: '0.1em', marginBottom: 8 }}>COLOR THEME</div>
-              <div className="flex gap-2 justify-center flex-wrap">
+            <div style={{ width: '100%' }}>
+              <div style={{ fontFamily: "'VT323',monospace", fontSize: 16, color: '#4b5563', letterSpacing: '0.1em', marginBottom: 10, textAlign: 'center' }}>
+                — COLOR THEME —
+              </div>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
                 {([
                   { id: 'gold',  label: 'GOLD',  swatch: '#ca8a04' },
                   { id: 'neon',  label: 'NEON',  swatch: '#00bcd4' },
@@ -250,13 +258,13 @@ function App() {
                     key={t.id}
                     onClick={() => dispatch({ type: 'SET_THEME', theme: t.id })}
                     style={{
-                      fontFamily: "'Press Start 2P',monospace", fontSize: 9,
-                      padding: '8px 12px', borderRadius: 6, cursor: 'pointer',
-                      background: state.theme === t.id ? t.swatch : 'transparent',
-                      border: `2px solid ${t.swatch}`,
-                      color: state.theme === t.id ? '#000' : t.swatch,
-                      opacity: state.theme === t.id ? 1 : 0.6,
+                      fontFamily: "'VT323',monospace", fontSize: 17,
+                      padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
+                      background: state.theme === t.id ? t.swatch + '33' : 'transparent',
+                      border: `2px solid ${state.theme === t.id ? t.swatch : t.swatch + '55'}`,
+                      color: state.theme === t.id ? t.swatch : t.swatch + '88',
                       transition: 'all 0.15s',
+                      minWidth: 70,
                     }}
                   >
                     {t.label}
@@ -265,22 +273,38 @@ function App() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 w-full">
-              {(['easy', 'normal', 'hard'] as const).map(d => {
-                const labels = { easy: '🟢 EASY', normal: '🟡 NORMAL', hard: '🔴 HARD' };
-                const descs = { easy: '10 hands · More time, lower pressure', normal: '8 hands · Balanced challenge', hard: '6 hands · Every hand counts' };
-                return (
+            {/* Difficulty */}
+            <div style={{ width: '100%' }}>
+              <div style={{ fontFamily: "'VT323',monospace", fontSize: 16, color: '#4b5563', letterSpacing: '0.1em', marginBottom: 10, textAlign: 'center' }}>
+                — SELECT DIFFICULTY —
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {([
+                  { d: 'easy',   icon: '🟢', label: 'EASY',   sub: '10 hands · More time, lower pressure' },
+                  { d: 'normal', icon: '🟡', label: 'NORMAL', sub: '8 hands · Balanced challenge' },
+                  { d: 'hard',   icon: '🔴', label: 'HARD',   sub: '6 hands · Every hand counts' },
+                ] as const).map(({ d, icon, label, sub }) => (
                   <button
                     key={d}
                     onClick={() => dispatch({ type: 'SET_DIFFICULTY', difficulty: d })}
-                    className="shop-card text-left hover:border-amber-600 cursor-pointer transition-all"
+                    style={{
+                      width: '100%', textAlign: 'left', cursor: 'pointer',
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.07)',
+                      borderRadius: 12, padding: '14px 16px',
+                      transition: 'border-color 0.15s, background 0.15s',
+                    }}
+                    className="hover:border-amber-700 hover:bg-amber-950/20"
                   >
-                    <div className="text-amber-200 font-bold mb-1">{labels[d]}</div>
-                    <div className="text-gray-500 text-sm">{descs[d]}</div>
+                    <div style={{ fontFamily: "'VT323',monospace", fontSize: 22, color: '#e5d5b0', marginBottom: 3 }}>
+                      {icon} {label}
+                    </div>
+                    <div style={{ fontFamily: "'VT323',monospace", fontSize: 16, color: '#4b5563' }}>{sub}</div>
                   </button>
-                );
-              })}
+                ))}
+              </div>
             </div>
+
           </div>
         )}
 
