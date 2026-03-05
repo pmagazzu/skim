@@ -18,6 +18,7 @@ import { Lobby } from './pages/Lobby';
 import { CoopGame } from './pages/CoopGame';
 import { PackOpenModal } from './components/PackOpenModal';
 import { ForgeResultModal } from './components/ForgeResultModal';
+import { Tutorial } from './components/Tutorial';
 import { OpponentArea } from './components/OpponentArea';
 import { DeckViewer } from './components/DeckViewer';
 import { UpgradeType } from './game/gameState';
@@ -25,8 +26,9 @@ import { UpgradeType } from './game/gameState';
 type SortMode = 'dealt' | 'high' | 'low' | 'suit';
 
 // ── Menu panel overlay — triggered by inline MENU buttons ──
-function MenuPanel({ open, onClose, onDevWin, onCatalog }: {
+function MenuPanel({ open, onClose, onDevWin, onCatalog, onTutorial, onMainMenu }: {
   open: boolean; onClose: () => void; onDevWin: () => void; onCatalog: () => void;
+  onTutorial?: () => void; onMainMenu?: () => void;
 }) {
   if (!open) return null;
   return (
@@ -72,6 +74,16 @@ function MenuPanel({ open, onClose, onDevWin, onCatalog }: {
           >
             📖 CHIP CATALOG
           </button>
+          {onTutorial && (
+            <button onClick={() => { onClose(); onTutorial(); }} style={{ width: '100%', padding: '12px 0', borderRadius: 10, cursor: 'pointer', background: 'rgba(255,255,255,0.03)', border: '1px solid #3a2e1e', color: '#9ca3af', fontFamily: "'VT323',monospace", fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              ? HOW TO PLAY
+            </button>
+          )}
+          {onMainMenu && (
+            <button onClick={() => { onClose(); onMainMenu(); }} style={{ width: '100%', padding: '12px 0', borderRadius: 10, cursor: 'pointer', background: 'rgba(255,255,255,0.02)', border: '1px solid #2a2520', color: '#4b5563', fontFamily: "'VT323',monospace", fontSize: 19 }}>
+              ← MAIN MENU
+            </button>
+          )}
           <button
             onClick={onClose}
             style={{
@@ -116,6 +128,7 @@ function App() {
   const [showCatalog, setShowCatalog] = useState(false);
   const [showDeckViewer, setShowDeckViewer] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [appScreen, setAppScreen] = useState<'mainmenu' | 'tutorial' | 'game'>('mainmenu');
   const [turnTimer, setTurnTimer] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerWarnedHalf = useRef(false);
@@ -244,6 +257,52 @@ function App() {
       playerIndex={coopRoom.playerIndex}
       onExit={() => { setCoopRoom(null); setAppMode('solo'); }}
     />;
+  }
+
+  // ── Main menu ──
+  if (appScreen === 'mainmenu') {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="vignette" />
+        <div style={{ width: '100%', maxWidth: 430, padding: '32px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28 }}>
+          <div style={{ textAlign: 'center' }}>
+            <div className="title-font gold-glow" style={{ fontSize: 80, letterSpacing: '0.14em', lineHeight: 1 }}>SKIM</div>
+            <div style={{ fontFamily: "'VT323',monospace", fontSize: 20, color: '#6b5a3e', marginTop: 6, letterSpacing: '0.1em' }}>
+              Fill the vault. Take your cut. Don't get caught.
+            </div>
+          </div>
+          <div style={{ fontFamily: "'VT323',monospace", fontSize: 28, color: '#3a2e1e', letterSpacing: '0.3em' }}>♠ ♥ ♦ ♣</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%' }}>
+            <button
+              onClick={() => setAppScreen('game')}
+              style={{
+                width: '100%', padding: '18px 0', borderRadius: 12, cursor: 'pointer',
+                background: 'linear-gradient(135deg, #92400e, #ca8a04)',
+                border: '1px solid #fde68a', color: '#fde68a',
+                fontFamily: "'VT323',monospace", fontSize: 30, letterSpacing: '0.12em',
+                boxShadow: '0 0 24px rgba(202,138,4,0.3), 0 4px 0 #78350f',
+              }}
+            >▶ PLAY</button>
+            <button
+              onClick={() => setAppScreen('tutorial')}
+              style={{
+                width: '100%', padding: '16px 0', borderRadius: 12, cursor: 'pointer',
+                background: 'rgba(255,255,255,0.03)', border: '1px solid #3a2e1e',
+                color: '#ca8a04', fontFamily: "'VT323',monospace", fontSize: 24, letterSpacing: '0.1em',
+              }}
+            >? HOW TO PLAY</button>
+          </div>
+          <MenuButton onClick={() => setShowMenu(true)} />
+        </div>
+        <MenuPanel open={showMenu} onClose={() => setShowMenu(false)} onDevWin={() => {}} onCatalog={() => setShowCatalog(true)} />
+        {showCatalog && <DebugIndex onClose={() => setShowCatalog(false)} />}
+      </div>
+    );
+  }
+
+  // ── Tutorial ──
+  if (appScreen === 'tutorial') {
+    return <Tutorial onClose={() => setAppScreen('game')} />;
   }
 
   return (
@@ -681,7 +740,7 @@ function App() {
                 <div key={b} className="text-sm text-amber-300 bg-amber-950/30 border border-amber-800/30 rounded-lg px-3 py-1">{b}</div>
               ))}
             </div>
-            <button onClick={() => dispatch({ type: 'RESET' })} className="btn-primary text-base px-12">PLAY AGAIN</button>
+            <button onClick={() => { dispatch({ type: 'RESET' }); setAppScreen('mainmenu'); }} className="btn-primary text-base px-12">PLAY AGAIN</button>
           </div>
         )}
 
@@ -712,7 +771,7 @@ function App() {
                 <div key={b} className="text-sm text-amber-300 bg-amber-950/30 border border-amber-800/30 rounded-lg px-3 py-1">{b}</div>
               ))}
             </div>
-            <button onClick={() => dispatch({ type: 'RESET' })} className="btn-primary text-base px-12">PLAY AGAIN</button>
+            <button onClick={() => { dispatch({ type: 'RESET' }); setAppScreen('mainmenu'); }} className="btn-primary text-base px-12">PLAY AGAIN</button>
           </div>
         )}
       </main>
@@ -732,6 +791,8 @@ function App() {
         onClose={() => setShowMenu(false)}
         onDevWin={() => dispatch({ type: 'DEBUG_WIN' })}
         onCatalog={() => setShowCatalog(true)}
+        onTutorial={() => setAppScreen('tutorial')}
+        onMainMenu={() => { dispatch({ type: 'RESET' }); setAppScreen('mainmenu'); }}
       />
       {showCatalog && <DebugIndex onClose={() => setShowCatalog(false)} />}
       {state.forgeResult && (
