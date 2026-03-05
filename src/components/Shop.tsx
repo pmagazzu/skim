@@ -33,6 +33,8 @@ interface ShopProps {
   onBuyHandUpgrade: (rank: HandRankValue) => void;
   onRerollHandUpgrades: () => void;
   onBuyForge: (rarity: 'common' | 'uncommon' | 'rare' | 'legendary') => void;
+  currentTheme: 'gold' | 'neon' | 'blood' | 'ice' | 'smoke';
+  onSetTheme: (t: 'gold' | 'neon' | 'blood' | 'ice' | 'smoke') => void;
   onViewDeck: () => void;
   onEndShop: () => void;
 }
@@ -69,7 +71,7 @@ function ShopCard({ item, canBuy, full, onBuy, lowCardCount = 0 }: {
         <div className="flex items-center gap-2">
           {isChip ? <ChipArt type={item.chipType!} size={36} /> : icon ? <span className="text-2xl">{icon}</span> : <span className="text-xl opacity-60">📦</span>}
           <div>
-            <div className="text-amber-200 font-semibold text-sm leading-tight">{item.label}</div>
+            <div className="text-amber-200 font-semibold leading-tight" style={{ fontSize: 15 }}>{item.label}</div>
             {item.rarity && <RarityBadge rarity={item.rarity} />}
           </div>
         </div>
@@ -83,11 +85,12 @@ function ShopCard({ item, canBuy, full, onBuy, lowCardCount = 0 }: {
           )}
         </div>
       )}
-      <div className="text-gray-500 text-xs flex-1 leading-relaxed">{item.description}</div>
+      <div className="text-gray-500 flex-1 leading-relaxed" style={{ fontSize: 13 }}>{item.description}</div>
       <div className="flex items-center justify-between mt-1">
-        <span className="gold-glow font-bold text-sm chip-counter">{item.cost}c</span>
+        <span className="gold-glow font-bold chip-counter" style={{ fontSize: 17 }}>{item.cost}c</span>
         <button onClick={canBuy ? onBuy : undefined} disabled={!canBuy}
-          className={canBuy ? 'btn-primary text-xs px-4 py-1.5' : 'btn-secondary text-xs px-4 py-1.5 opacity-40 cursor-default'}>
+          style={{ fontSize: 13, padding: '8px 18px', minHeight: 38 }}
+          className={canBuy ? 'btn-primary' : 'btn-secondary opacity-40 cursor-default'}>
           {full ? 'FULL' : !canBuy ? 'CAN\'T' : 'BUY'}
         </button>
       </div>
@@ -128,13 +131,13 @@ function OwnedChipRow({ chip, index, personalChips, onSell }: {
     <div className="flex items-center gap-3 p-2 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
       <ChipArt type={chip} size={32} />
       <div className="flex-1 min-w-0">
-        <div className="text-amber-200 text-sm font-semibold leading-tight">{def.name}</div>
-        <div className="text-gray-600 text-xs truncate">{def.description}</div>
+        <div style={{ fontFamily: "'VT323',monospace", fontSize: 17, color: '#fde68a', lineHeight: 1.2 }}>{def.name}</div>
+        <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#4b5563' }}>{def.description}</div>
       </div>
       <div className="flex flex-col items-end gap-1">
-        <span className="text-gray-600 text-xs">slot {index + 1}</span>
         <button onClick={onSell} title={`Sell for ${refund}c`}
-          className="text-xs px-2 py-0.5 border border-red-900/60 text-red-500 rounded hover:bg-red-950/30 transition-colors">
+          style={{ fontSize: 13, padding: '6px 12px', minHeight: 36 }}
+          className="border border-red-900/60 text-red-500 rounded hover:bg-red-950/30 transition-colors">
           SELL {refund}c
         </button>
       </div>
@@ -155,24 +158,20 @@ function HandUpgradeCard({ rank, level, canBuy, discount, onBuy }: {
   const rawCost = handUpgradeCost(rank, level);
   const cost = Math.max(1, Math.ceil(rawCost * (1 - discount)));
   return (
-    <div className="shop-card flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <span className="text-2xl">{HAND_ICONS[rank]}</span>
-        <div className="flex-1">
-          <div className="text-amber-200 font-semibold text-sm">{HAND_NAMES[rank]}</div>
-          <div className="text-gray-600 text-xs">Level {level} → {level + 1}</div>
+    <div className="shop-card flex items-center gap-3" style={{ padding: '12px 14px' }}>
+      <span style={{ fontSize: 24, flexShrink: 0 }}>{HAND_ICONS[rank]}</span>
+      <div className="flex-1 min-w-0">
+        <div style={{ fontFamily: "'VT323',monospace", fontSize: 18, color: '#fde68a', lineHeight: 1.2 }}>{HAND_NAMES[rank]}</div>
+        <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#4b5563' }}>
+          {currentBase} → <span style={{ color: '#4ade80' }}>{nextBase}</span> chips · ×{cfg.mult}
         </div>
-        <div className="text-xs text-emerald-400 font-mono shrink-0">Lv.{level}</div>
       </div>
-      <div className="flex items-center justify-between text-xs text-gray-500">
-        <span>Base: <span className="text-gray-400">{currentBase}</span> → <span className="text-emerald-400">{nextBase}</span></span>
-        <span className="text-gray-600">×{cfg.mult} mult</span>
-      </div>
-      <div className="flex items-center justify-between mt-1">
-        <span className="gold-glow font-bold text-sm chip-counter">{cost}c</span>
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        <span style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#a78bfa' }}>Lv.{level}</span>
         <button onClick={canBuy ? onBuy : undefined} disabled={!canBuy}
-          className={canBuy ? 'btn-primary text-xs px-4 py-1.5' : 'btn-secondary text-xs px-4 py-1.5 opacity-40 cursor-default'}>
-          UPGRADE
+          style={{ fontSize: 13, padding: '7px 14px', minHeight: 36 }}
+          className={canBuy ? 'btn-primary' : 'btn-secondary opacity-40 cursor-default'}>
+          {cost}c UP
         </button>
       </div>
     </div>
@@ -181,7 +180,7 @@ function HandUpgradeCard({ rank, level, canBuy, discount, onBuy }: {
 
 function TabButton({ label, active, onClick, badge }: { label: string; active: boolean; onClick: () => void; badge?: number }) {
   return (
-    <button onClick={onClick} style={{ whiteSpace: 'nowrap', flexShrink: 0, fontSize: 10, padding: '4px 8px' }} className={['relative rounded transition-all', active ? 'btn-primary' : 'btn-secondary'].join(' ')}>
+    <button onClick={onClick} style={{ whiteSpace: 'nowrap', flexShrink: 0, fontSize: 11, padding: '8px 12px', minHeight: 40 }} className={['relative rounded transition-all', active ? 'btn-primary' : 'btn-secondary'].join(' ')}>
       {label}
       {badge !== undefined && badge > 0 && (
         <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-amber-500 text-black text-xs flex items-center justify-center font-bold" style={{ fontSize: 9 }}>{badge}</span>
@@ -194,7 +193,7 @@ export function Shop({
   items, personalChips, consumableCount, chipCount, maxChips, deckSize, lowCardCount,
   availableBounties, chipStack, purchasedUpgrades, shopDiscount,
   handLevels, shopHandUpgrades, handRerollCost,
-  onBuy, onAcceptBounty, onSellChip, onBuyUpgrade, onBuyHandUpgrade, onRerollHandUpgrades, onBuyForge, onViewDeck, onEndShop,
+  onBuy, onAcceptBounty, onSellChip, onBuyUpgrade, onBuyHandUpgrade, onRerollHandUpgrades, onBuyForge, currentTheme, onSetTheme, onViewDeck, onEndShop,
 }: ShopProps) {
   const [tab, setTab] = useState<ShopTab>('chips');
 
@@ -203,19 +202,19 @@ export function Shop({
   const packItems    = items.filter(i => i.type === 'pack');
 
   return (
-    <div className="flex flex-col gap-4 p-5 w-full max-w-2xl mx-auto" style={{ overflowY: 'visible' }}>
+    <div className="flex flex-col gap-4 p-4 w-full mx-auto" style={{ overflowY: 'visible', maxWidth: '100%' }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="title-font text-2xl gold-glow tracking-widest">— SHOP —</div>
         <div className="flex flex-col items-end gap-0.5">
-          <div className="text-gray-500 text-sm">
-            Bank: <span className="gold-glow font-bold chip-counter">{personalChips.toLocaleString()}</span>
-            {shopDiscount > 0 && <span className="text-emerald-500 text-xs ml-2">(-{Math.round(shopDiscount * 100)}% off)</span>}
+          <div style={{ fontFamily: "'VT323',monospace", fontSize: 20, color: '#6b7280' }}>
+            Bank: <span className="gold-glow chip-counter" style={{ fontSize: 22 }}>{personalChips.toLocaleString()}c</span>
+            {shopDiscount > 0 && <span style={{ color: '#4ade80', fontSize: 15, marginLeft: 8 }}>-{Math.round(shopDiscount * 100)}% off</span>}
           </div>
-          <div className="flex items-center gap-3 text-gray-700 text-xs">
+          <div style={{ fontFamily: "'VT323',monospace", fontSize: 15, color: '#4b5563', display: 'flex', gap: 12 }}>
             <span>Deck: {deckSize}</span>
             <span>Chips: {chipCount}/{maxChips}</span>
-            <button onClick={onViewDeck} className="text-amber-700 hover:text-amber-500 underline underline-offset-2 transition-colors">View Deck</button>
+            <button onClick={onViewDeck} style={{ color: '#92400e', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit' }}>View Deck</button>
           </div>
         </div>
       </div>
@@ -224,9 +223,9 @@ export function Shop({
       {chipStack.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-3">
-            <span className="section-label">Your Stack</span>
+            <span style={{ fontFamily: "'VT323',monospace", fontSize: 15, color: '#4b5563', letterSpacing: '0.1em' }}>YOUR STACK</span>
             <div className="flex-1 h-px bg-white/5" />
-            <span className="text-gray-700 text-xs">sell for 45% back</span>
+            <span style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#4b5563' }}>sell = 45% back</span>
           </div>
           <div className="flex flex-col gap-1.5">
             {chipStack.map((chip, i) => (
@@ -249,7 +248,7 @@ export function Shop({
 
       {/* Tab: Chips */}
       {tab === 'chips' && (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           {chipItems.map(item => {
             const full = chipCount >= maxChips;
             const canBuy = personalChips >= item.cost && !full;
@@ -260,7 +259,7 @@ export function Shop({
 
       {/* Tab: Casino */}
       {tab === 'casino' && (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="flex flex-col gap-3">
           {casinoItems.map(item => {
             const full = item.type === 'consumable' && consumableCount >= 4;
             const canBuy = personalChips >= item.cost && !full;
@@ -271,19 +270,19 @@ export function Shop({
 
       {/* Tab: Deck */}
       {tab === 'deck' && (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="flex flex-col gap-3">
           {packItems.map(item => {
             const canBuy = personalChips >= item.cost;
             return <ShopCard key={item.id} item={item} canBuy={canBuy} full={false} onBuy={() => onBuy(item.id)} lowCardCount={lowCardCount} />;
           })}
-          {packItems.length === 0 && <div className="text-gray-600 text-sm col-span-2 text-center py-4">No packs available this round.</div>}
+          {packItems.length === 0 && <div className="text-gray-600 text-sm text-center py-4">No packs available this round.</div>}
         </div>
       )}
 
       {/* Tab: Hands */}
       {tab === 'hands' && (
         <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-2">
             {shopHandUpgrades.map(rank => (
               <HandUpgradeCard
                 key={rank}
@@ -295,30 +294,28 @@ export function Shop({
               />
             ))}
             {shopHandUpgrades.length === 0 && (
-              <div className="col-span-2 text-gray-600 text-sm text-center py-4">No hand upgrades this visit.</div>
+              <div className="text-gray-600 text-sm text-center py-4">No hand upgrades this visit.</div>
             )}
           </div>
           {/* Reroll */}
-          <div className="flex items-center justify-between pt-1 border-t border-white/5">
-            <div className="text-gray-600 text-xs">Don't like these? Reroll for new options.</div>
-            <button
-              onClick={personalChips >= handRerollCost ? onRerollHandUpgrades : undefined}
-              disabled={personalChips < handRerollCost}
-              className={personalChips >= handRerollCost ? 'btn-secondary text-xs px-3 py-1' : 'btn-secondary text-xs px-3 py-1 opacity-30 cursor-default'}
-            >
-              🎲 Reroll ({handRerollCost}c)
-            </button>
-          </div>
+          <button
+            onClick={personalChips >= handRerollCost ? onRerollHandUpgrades : undefined}
+            disabled={personalChips < handRerollCost}
+            style={{ fontSize: 14, padding: '10px 0', width: '100%' }}
+            className={personalChips >= handRerollCost ? 'btn-secondary' : 'btn-secondary opacity-30 cursor-default'}
+          >
+            🎲 Reroll for {handRerollCost}c
+          </button>
           {/* All hand levels reference */}
           <div className="border-t border-white/5 pt-2">
-            <div className="section-label mb-2">All Hand Levels</div>
-            <div className="grid grid-cols-2 gap-1">
+            <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#4b5563', letterSpacing: '0.1em', marginBottom: 8 }}>ALL HAND LEVELS</div>
+            <div className="flex flex-col gap-1">
               {(Object.keys(SCORE_TABLE) as unknown as HandRankValue[]).map(Number).map((r: HandRankValue) => {
                 const lv = handLevels[r] ?? 1;
                 return (
-                  <div key={r} className="flex items-center justify-between text-xs px-2 py-1 rounded bg-white/[0.02]">
-                    <span className="text-gray-500">{HAND_NAMES[r]}</span>
-                    <span className="text-amber-600 font-mono">Lv.{lv} · {handBaseAtLevel(r, lv)}+</span>
+                  <div key={r} className="flex items-center justify-between px-2 py-1.5 rounded bg-white/[0.02]">
+                    <span style={{ fontFamily: "'VT323',monospace", fontSize: 16, color: '#9ca3af' }}>{HAND_NAMES[r]}</span>
+                    <span style={{ fontFamily: "'VT323',monospace", fontSize: 16, color: lv > 1 ? '#a78bfa' : '#6b5a3e' }}>Lv.{lv} · {handBaseAtLevel(r, lv)}c</span>
                   </div>
                 );
               })}
@@ -408,7 +405,32 @@ export function Shop({
         </div>
       )}
 
-      <button onClick={onEndShop} className="btn-primary text-base px-12 self-center mt-2">
+      {/* Theme switcher */}
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 12 }}>
+        <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: 'var(--text-dim)', letterSpacing: '0.1em', marginBottom: 8, textAlign: 'center' }}>COLOR THEME</div>
+        <div className="flex gap-2 justify-center flex-wrap">
+          {([
+            { id: 'gold',  label: '🟡', title: 'GOLD'  },
+            { id: 'neon',  label: '🔵', title: 'NEON'  },
+            { id: 'blood', label: '🔴', title: 'BLOOD' },
+            { id: 'ice',   label: '🩵', title: 'ICE'   },
+            { id: 'smoke', label: '⬜', title: 'SMOKE' },
+          ] as const).map(t => (
+            <button key={t.id} onClick={() => onSetTheme(t.id)} title={t.title}
+              style={{
+                fontFamily: "'Press Start 2P',monospace", fontSize: 9,
+                padding: '6px 10px', borderRadius: 6, cursor: 'pointer', minHeight: 36,
+                background: currentTheme === t.id ? 'rgba(255,255,255,0.1)' : 'transparent',
+                border: `1px solid ${currentTheme === t.id ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                color: currentTheme === t.id ? '#fff' : 'rgba(255,255,255,0.4)',
+              }}>
+              {t.label} {t.title}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <button onClick={onEndShop} className="btn-primary w-full mt-2" style={{ fontSize: 16, padding: '14px 0' }}>
         NEXT ROUND →
       </button>
     </div>

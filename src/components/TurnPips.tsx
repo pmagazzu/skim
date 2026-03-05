@@ -56,10 +56,10 @@ export function TurnPips({ handsPlayed, maxHands, vault, vaultTarget, turnTimeRe
           const isFlashing = i === flashIdx.current;
           return (
             <div key={i} style={{
-              width: 14, height: 14, borderRadius: '50%',
+              width: 22, height: 22, borderRadius: '50%',
               background: pipColor(i),
               boxShadow: isActive ? pipGlow(i) : 'none',
-              border: `1.5px solid ${isActive ? pipColor(i) : '#333'}`,
+              border: `2px solid ${isActive ? pipColor(i) : '#333'}`,
               transition: 'background 0.3s, box-shadow 0.3s',
               animation: isFlashing ? 'pip-fire 0.4s ease-out forwards' : 'none',
               flexShrink: 0,
@@ -68,9 +68,9 @@ export function TurnPips({ handsPlayed, maxHands, vault, vaultTarget, turnTimeRe
         })}
         <span style={{
           fontFamily: "'VT323',monospace",
-          fontSize: 15,
+          fontSize: 22,
           color: handsLeft <= 1 ? '#ef4444' : handsLeft <= 2 ? '#f59e0b' : '#6b7280',
-          marginLeft: 4,
+          marginLeft: 6,
         }}>
           {handsLeft} left
         </span>
@@ -93,11 +93,11 @@ export function TurnPips({ handsPlayed, maxHands, vault, vaultTarget, turnTimeRe
           }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: "'VT323',monospace", fontSize: 11, color: '#4b5563' }}>
-          <span>{vault.toLocaleString()}</span>
-          <span style={{ color: vaultPct >= 1 ? '#22c55e' : '#6b5a3e' }}>
+          <span style={{ fontSize: 14 }}>{vault.toLocaleString()}</span>
+          <span style={{ color: vaultPct >= 1 ? '#22c55e' : '#6b5a3e', fontSize: 14 }}>
             {Math.round(vaultPct * 100)}% filled
           </span>
-          <span>{vaultTarget.toLocaleString()}</span>
+          <span style={{ fontSize: 14 }}>{vaultTarget.toLocaleString()}</span>
         </div>
       </div>
     </div>

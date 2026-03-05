@@ -209,6 +209,7 @@ export interface GameState {
   consumableSlots: number;               // 2 default, up to 4 via upgrades
   shopDiscount: number;                    // 0.0–0.5, applied to all shop costs
   feltSkin: 'default' | 'neon' | 'marble';
+  theme: 'gold' | 'neon' | 'blood' | 'ice' | 'smoke';
   handLevels: Record<HandRankValue, number>;   // upgrade level per hand rank (1 = base)
   shopHandUpgrades: HandRankValue[];           // 2 random hands offered for upgrade this shop visit
   handRerollCost: number;                      // current reroll cost (escalates per reroll)
@@ -233,6 +234,7 @@ export type GameAction =
   | { type: 'SELL_CHIP'; index: number }
   | { type: 'TIP_CHIP'; index: number }
   | { type: 'BUY_UPGRADE'; upgradeType: UpgradeTypeValue }
+  | { type: 'SET_THEME'; theme: 'gold' | 'neon' | 'blood' | 'ice' | 'smoke' }
   | { type: 'BUY_HAND_UPGRADE'; handRank: HandRankValue }
   | { type: 'REROLL_HAND_UPGRADES' }
   | { type: 'BUY_FORGE'; rarity: 'common' | 'uncommon' | 'rare' | 'legendary' }
@@ -660,6 +662,7 @@ export const initialState: GameState = {
   consumableSlots: 2,
   shopDiscount: 0,
   feltSkin: 'default',
+  theme: 'gold',
   handLevels: { 1:1, 2:1, 3:1, 4:1, 5:1, 6:1, 7:1, 8:1, 9:1, 10:1 },
   shopHandUpgrades: [],
   handRerollCost: 10,
@@ -968,6 +971,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const newStack = state.chipStack.filter((_, i) => i !== index);
       return { ...state, chipStack: newStack, tipBonus: bonus };
     }
+
+    case 'SET_THEME':
+      return { ...state, theme: action.theme };
 
     case 'BUY_UPGRADE': {
       const { upgradeType } = action;

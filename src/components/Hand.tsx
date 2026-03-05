@@ -61,23 +61,24 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
     <div className="flex flex-col items-center gap-4">
       {/* Sort controls */}
       <div className="flex items-center gap-1">
-        <span className="section-label mr-2">Sort:</span>
+        <span style={{ fontFamily: "'VT323',monospace", fontSize: 16, color: '#6b7280' }} className="mr-1">Sort:</span>
         {SORT_OPTIONS.map(o => (
           <button
             key={o.mode}
             onClick={() => onSortChange(o.mode)}
+            style={{ fontFamily: "'VT323',monospace", fontSize: 15, padding: '4px 10px' }}
             className={[
-              'text-xs px-2 py-1 rounded transition-all',
+              'rounded transition-all',
               sortMode === o.mode
                 ? 'bg-amber-800/60 text-amber-300 border border-amber-700'
-                : 'text-gray-600 hover:text-gray-400 border border-transparent',
+                : 'text-gray-500 hover:text-gray-400 border border-transparent',
             ].join(' ')}
           >
             {o.label}
           </button>
         ))}
       </div>
-      <div className="flex gap-2 flex-wrap justify-center">
+      <div className="flex gap-1 flex-nowrap justify-center" style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', width: '100%', paddingTop: 16 }}>
         {sortedHand.map((card, i) => (
           <Card
             key={card.id}
@@ -101,22 +102,21 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
         </div>
       )}
 
-      <div className="h-8 flex items-center gap-3">
+      <div style={{ minHeight: 36, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
         {handResult && selectedIds.length > 0 ? (
           <>
-            <span className="text-amber-300 font-semibold text-sm">{handResult.name}</span>
+            <span style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: '#fbbf24', letterSpacing: '0.04em' }}>{handResult.name}</span>
             {handLevels[handResult.rank] > 1 && (
-              <span style={{ fontFamily: "'VT323',monospace", fontSize: 12, color: '#a78bfa', letterSpacing: '0.05em' }}>
+              <span style={{ fontFamily: "'VT323',monospace", fontSize: 20, color: '#a78bfa' }}>
                 Lv.{handLevels[handResult.rank]}
               </span>
             )}
-            <span className={`font-bold ${scratchMultiplier > 1 ? 'text-orange-300' : 'gold-glow'}`}>
-              +{chipPreview.toLocaleString()} chips
+            <span style={{ fontFamily: "'VT323',monospace", fontSize: 26, color: scratchMultiplier > 1 ? '#fb923c' : '#ca8a04', fontWeight: 'bold' }}>
+              +{chipPreview.toLocaleString()}c
             </span>
-            <span className="text-gray-600 text-xs">({selectedIds.length} card{selectedIds.length !== 1 ? 's' : ''})</span>
           </>
         ) : (
-          <span className="text-gray-600 text-sm">Select 1–5 cards to play</span>
+          <span style={{ fontFamily: "'VT323',monospace", fontSize: 20, color: '#4b5563' }}>Select 1–5 cards to play</span>
         )}
       </div>
 
@@ -128,11 +128,12 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
         turnTimeRemaining={turnTimeRemaining ?? null}
       />
 
-      <div className="flex gap-3 items-center">
+      <div className="flex gap-2 items-center w-full justify-center">
         <button
           onClick={canPlay ? onPlay : undefined}
           disabled={!canPlay}
-          className="btn-primary text-base px-10"
+          className="btn-primary flex-1"
+          style={{ fontSize: 17, padding: '14px 16px', maxWidth: 220 }}
         >
           PLAY HAND
         </button>
@@ -140,15 +141,16 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
           onClick={canDiscard ? onDiscard : undefined}
           disabled={!canDiscard}
           title={isPaidDiscard ? `Costs ${extraDiscardCost}c — free discards used up` : `${freeDiscardsLeft} free discard${freeDiscardsLeft !== 1 ? 's' : ''} remaining`}
+          style={{ fontSize: 15, padding: '14px 14px' }}
           className={[
-            'btn-secondary text-sm px-4 py-2',
+            'btn-secondary',
             !canDiscard ? 'opacity-30 cursor-default' : '',
             isPaidDiscard && canAffordPaidDiscard ? 'border-amber-600 text-amber-400' : '',
           ].join(' ')}
         >
           {isPaidDiscard
-            ? <span>DISCARD <span style={{ fontSize: 11, color: '#fbbf24' }}>−{extraDiscardCost}c</span></span>
-            : <span>DISCARD <span style={{ fontSize: 11, opacity: 0.6 }}>{freeDiscardsLeft}↺</span></span>
+            ? <span>DISCARD <span style={{ fontSize: 12, color: '#fbbf24' }}>−{extraDiscardCost}c</span></span>
+            : <span>DISCARD <span style={{ fontSize: 12, opacity: 0.6 }}>{freeDiscardsLeft}↺</span></span>
           }
         </button>
       </div>

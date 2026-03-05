@@ -38,7 +38,12 @@ function App() {
   const prevScore = useRef<number | null>(null);
   const [shakeTier, setShakeTier] = useState(0);
 
-  // Play sounds when a hand scores — scaled by score/vaultTarget
+  // Apply theme to document root
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', state.theme ?? 'gold');
+  }, [state.theme]);
+
+// Play sounds when a hand scores — scaled by score/vaultTarget
   useEffect(() => {
     if (state.lastScore !== null && state.lastScore !== prevScore.current) {
       prevScore.current = state.lastScore;
@@ -167,8 +172,8 @@ function App() {
         />
       )}
 
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+      {/* Header — hidden during active gameplay to save vertical space */}
+      <header className={`flex items-center justify-between px-4 py-3 border-b border-white/5 ${state.phase === 'selecting' || state.phase === 'score-review' ? 'hidden' : ''}`}>
         <div className="flex items-center gap-3">
           <div className="title-font text-2xl gold-glow tracking-widest">SKIM</div>
           <button onClick={() => setAppMode('lobby')} style={{ fontFamily: "'Press Start 2P',monospace", fontSize: 7, background: 'transparent', border: '1px solid #3a2e1e', borderRadius: 4, color: '#6b5a3e', padding: '3px 7px', cursor: 'pointer', letterSpacing: '0.05em' }}>
@@ -226,9 +231,40 @@ function App() {
 
         {/* DIFFICULTY SELECT */}
         {state.phase === 'difficulty' && (
-          <div className="flex flex-col items-center gap-8 max-w-sm text-center">
+          <div className="flex flex-col items-center gap-6 w-full max-w-sm text-center px-4">
             <div className="title-font text-4xl gold-glow tracking-widest">SKIM</div>
             <p className="text-gray-500 text-sm">Fill the vault. Take your cut. Try not to get caught.</p>
+
+            {/* Theme picker */}
+            <div className="w-full">
+              <div style={{ fontFamily: "'VT323',monospace", fontSize: 15, color: 'var(--text-dim)', letterSpacing: '0.1em', marginBottom: 8 }}>COLOR THEME</div>
+              <div className="flex gap-2 justify-center flex-wrap">
+                {([
+                  { id: 'gold',  label: 'GOLD',  swatch: '#ca8a04' },
+                  { id: 'neon',  label: 'NEON',  swatch: '#00bcd4' },
+                  { id: 'blood', label: 'BLOOD', swatch: '#c62828' },
+                  { id: 'ice',   label: 'ICE',   swatch: '#0288d1' },
+                  { id: 'smoke', label: 'SMOKE', swatch: '#757575' },
+                ] as const).map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => dispatch({ type: 'SET_THEME', theme: t.id })}
+                    style={{
+                      fontFamily: "'Press Start 2P',monospace", fontSize: 9,
+                      padding: '8px 12px', borderRadius: 6, cursor: 'pointer',
+                      background: state.theme === t.id ? t.swatch : 'transparent',
+                      border: `2px solid ${t.swatch}`,
+                      color: state.theme === t.id ? '#000' : t.swatch,
+                      opacity: state.theme === t.id ? 1 : 0.6,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="flex flex-col gap-3 w-full">
               {(['easy', 'normal', 'hard'] as const).map(d => {
                 const labels = { easy: '🟢 EASY', normal: '🟡 NORMAL', hard: '🔴 HARD' };
@@ -275,74 +311,26 @@ function App() {
         {/* SELECTING */}
         {state.phase === 'selecting' && (
           <div className="game-canvas">
-            {/* ── Outer row: consumables sidebar | felt ── */}
+            {/* ── Portrait layout: single column ── */}
             <div className="felt-outer-row">
 
-            {/* Consumables vertical bar */}
-            <div className="consumables-sidebar">
-              <Consumables
-                held={state.consumables}
-                onUse={type => dispatch({ type: 'USE_CONSUMABLE', consumable: type })}
-                onRouletteBet={amount => dispatch({ type: 'ROULETTE_BET', amount })}
-                scratchMultiplier={state.scratchMultiplier}
-                unlockedSlots={state.consumableSlots}
-                vertical
-              />
-            </div>
-
-            {/* ── Felt table: everything lives on the felt now ── */}
-            <div className={`felt felt-table relative felt-skin-${state.feltSkin}${shakeTier >= 3 ? ' felt-shake-big' : shakeTier === 2 ? ' felt-shake' : ''}`} style={{ flex: 1, minWidth: 0 }}>
-
-              {/* Turn timer bars — top + bottom edges of felt */}
-              {turnTimer !== null && (() => {
-                const duration = state.ante >= 3 ? 45 : state.ante >= 2 ? 60 : 90;
-                const pct = (turnTimer / duration) * 100;
-                const isRed = turnTimer <= Math.floor(duration / 4);
-                const isAmber = !isRed && turnTimer <= Math.floor(duration / 2);
-                const color = isRed ? '#ef4444' : isAmber ? '#f59e0b' : '#22c55e';
-                const glow = isRed ? '0 0 10px rgba(239,68,68,0.9)' : isAmber ? '0 0 6px rgba(245,158,11,0.7)' : 'none';
-                const barStyle = { height: '100%', width: `${pct}%`, background: color, transition: 'width 1s linear, background 0.3s ease', boxShadow: glow };
-                return (
-                  <>
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, borderRadius: '1rem 1rem 0 0', overflow: 'hidden', zIndex: 10 }}>
-                      <div style={barStyle} />
-                    </div>
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, borderRadius: '0 0 1rem 1rem', overflow: 'hidden', zIndex: 10 }}>
-                      <div style={barStyle} />
-                    </div>
-                    {isRed && (
-                      <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 20, fontFamily: "'VT323',monospace", fontSize: 13, color: '#ef4444', letterSpacing: '0.1em', animation: 'pulse 0.5s ease-in-out infinite alternate', pointerEvents: 'none' }}>
-                        ⚠ TIME RUNNING OUT
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
-              {/* timer text handled by TurnPips */}
+            {/* ── Felt table ── */}
+            <div className={`felt felt-table relative felt-skin-${state.feltSkin}${shakeTier >= 3 ? ' felt-shake-big' : shakeTier === 2 ? ' felt-shake' : ''}`}>
 
 
-              {/* Row 1: Vault | Opponent cards | SkimLedger */}
+
+
+              {/* Top area — portrait compact layout */}
               <div className="felt-top-row">
-                <div className="felt-corner-left">
-                  <Vault chips={state.vault} target={state.vaultTarget} />
-                  <div style={{ fontFamily: "'VT323',monospace", fontSize: 13, color: '#ca8a04', letterSpacing: '0.08em', marginTop: 2 }}>
-                    Round {state.ante} · Level {state.roundInAnte}/3
+                {/* Strip 1: vault bar full width */}
+                <Vault chips={state.vault} target={state.vaultTarget} />
+
+                {/* Strip 2: round label | wallet | skim rate */}
+                <div className="felt-top-row-strip">
+                  <div style={{ fontFamily: "'VT323',monospace", fontSize: 22, color: '#ca8a04', letterSpacing: '0.06em' }}>
+                    Round {state.ante} · Lvl {state.roundInAnte}/3
                   </div>
-                  {state.activeBounties.length > 0 && (
-                    <div className="flex flex-col gap-0.5 mt-1" style={{ maxWidth: 140 }}>
-                      {state.activeBounties.map(b => (
-                        <div key={b.id} className={[
-                          'text-xs px-1.5 py-0.5 rounded truncate',
-                          b.completed ? 'text-emerald-600 opacity-50 line-through' : 'text-amber-700',
-                        ].join(' ')} style={{ fontFamily: "'VT323',monospace", fontSize: 12 }}>
-                          {b.completed ? '✓' : '◎'} {b.title}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <OpponentArea />
-                <div className="felt-corner-right">
+                  <OpponentArea />
                   <SkimLedger
                     personalChips={state.personalChips}
                     skimRate={state.skimRate}
@@ -352,13 +340,27 @@ function App() {
                     lastBonusDetail={state.lastBonusDetail}
                   />
                 </div>
+
+                {/* Strip 3: active bounties inline */}
+                {state.activeBounties.length > 0 && (
+                  <div className="flex flex-row flex-wrap gap-1" style={{ width: '100%' }}>
+                    {state.activeBounties.map(b => (
+                      <div key={b.id} className={[
+                        'px-2 py-0.5 rounded',
+                        b.completed ? 'text-emerald-600 opacity-50 line-through' : 'text-amber-700',
+                      ].join(' ')} style={{ fontFamily: "'VT323',monospace", fontSize: 15 }}>
+                        {b.completed ? '✓' : '◎'} {b.title}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Row 2: community left | hand right */}
               <div className="table-divider" />
               <div className="felt-play-row">
 
-                {/* LEFT: Community cards + chip stack */}
+                {/* TOP: Community cards */}
                 <div className="felt-community-col">
                   <CommunityCards
                     cards={state.communityCards}
@@ -374,32 +376,10 @@ function App() {
                     onDeckClick={() => setShowDeckViewer(true)}
                     sortMode={sortMode}
                   />
-                  {state.chipStack.length > 0 && (
-                    <div className="flex flex-col items-center gap-1 mt-1">
-                      <ChipStack
-                        chips={state.chipStack}
-                        blackChipUsed={state.blackChipUsedThisRound}
-                        lastFiredChips={state.lastFiredChips}
-                        canTip={state.phase === 'selecting' && !state.tipBonus}
-                        onReorder={(from, to) => dispatch({ type: 'REORDER_CHIPS', fromIndex: from, toIndex: to })}
-                        onTipChip={index => dispatch({ type: 'TIP_CHIP', index })}
-                      />
-                      {state.tipBonus && (
-                        <div className="text-xs px-3 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-amber-300 animate-pulse" style={{ fontFamily: "'VT323',monospace", fontSize: 13 }}>
-                          🎯 TIP ACTIVE: {state.tipBonus.label} — fires next hand
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
 
-                {/* RIGHT: Your hand + bounties — centered */}
+                {/* BOTTOM: Your hand */}
                 <div className="felt-hand-col">
-                  {state.activeBounties.length > 0 && (
-                    <div className="flex justify-center">
-                      <ActiveBounties bounties={state.activeBounties} />
-                    </div>
-                  )}
                   <Hand
                     hand={state.hand}
                     selectedIds={state.selectedIds}
@@ -429,10 +409,43 @@ function App() {
                   />
                 </div>
               </div>
+
+              {/* Chip stack — horizontal scrollable row inside felt */}
+              {state.chipStack.length > 0 && (
+                <div style={{ width: '100%', overflowX: 'auto', scrollbarWidth: 'none' }}>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6, padding: '2px 4px', justifyContent: 'center' }}>
+                    <ChipStack
+                      chips={state.chipStack}
+                      blackChipUsed={state.blackChipUsedThisRound}
+                      lastFiredChips={state.lastFiredChips}
+                      canTip={state.phase === 'selecting' && !state.tipBonus}
+                      onReorder={(from, to) => dispatch({ type: 'REORDER_CHIPS', fromIndex: from, toIndex: to })}
+                      onTipChip={index => dispatch({ type: 'TIP_CHIP', index })}
+                    />
+                  </div>
+                  {state.tipBonus && (
+                    <div className="text-xs text-center px-3 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-amber-300 animate-pulse" style={{ fontFamily: "'VT323',monospace", fontSize: 12, margin: '2px 0' }}>
+                      🎯 TIP ACTIVE: {state.tipBonus.label}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Consumables — horizontal strip below felt */}
+            <div className="consumables-sidebar">
+              <Consumables
+                held={state.consumables}
+                onUse={type => dispatch({ type: 'USE_CONSUMABLE', consumable: type })}
+                onRouletteBet={amount => dispatch({ type: 'ROULETTE_BET', amount })}
+                scratchMultiplier={state.scratchMultiplier}
+                unlockedSlots={state.consumableSlots}
+                vertical={false}
+              />
             </div>
             </div>
 
-            {/* Scoring chain — compact inline strip, below the outer row */}
+            {/* Scoring chain */}
             {state.lastScore !== null && state.lastBaseScore !== null && (
               <ScoreChain
                 baseScore={state.lastBaseScore}
@@ -442,11 +455,6 @@ function App() {
                 skimRate={state.skimRate}
               />
             )}
-
-            {/* Bottom: level indicator */}
-            <div style={{ textAlign: 'center', fontFamily: "'VT323',monospace", fontSize: 13, color: '#374151', paddingTop: 2 }}>
-              Round {state.ante} · Level {state.roundInAnte}/3
-            </div>
 
           </div>
         )}
@@ -533,6 +541,8 @@ function App() {
             onBuyHandUpgrade={rank => { playPurchase(); dispatch({ type: 'BUY_HAND_UPGRADE', handRank: rank }); }}
             onRerollHandUpgrades={() => dispatch({ type: 'REROLL_HAND_UPGRADES' })}
             onBuyForge={rarity => { playPurchase(); dispatch({ type: 'BUY_FORGE', rarity }); }}
+            currentTheme={state.theme}
+            onSetTheme={theme => dispatch({ type: 'SET_THEME', theme })}
             onViewDeck={() => setShowDeckViewer(true)}
             onEndShop={() => dispatch({ type: 'END_SHOP' })}
           />

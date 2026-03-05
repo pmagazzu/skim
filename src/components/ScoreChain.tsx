@@ -21,10 +21,10 @@ export function ScoreChain({ baseScore, handName, steps, finalScore, skimRate }:
 
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 6px',
-      padding: '5px 10px', borderRadius: 8,
+      display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 8px',
+      padding: '8px 12px', borderRadius: 8,
       background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.05)',
-      fontFamily: "'VT323',monospace", fontSize: 14,
+      fontFamily: "'VT323',monospace", fontSize: 18,
     }}>
       {/* Hand name + base */}
       <span style={{ color: '#d1d5db' }}>{handName}</span>
@@ -48,13 +48,13 @@ export function ScoreChain({ baseScore, handName, steps, finalScore, skimRate }:
       <span
         key={finalScore}
         className="score-slam"
-        style={{ color: '#fde68a', fontWeight: 700, fontSize: 16, display: 'inline-block' }}
+        style={{ color: '#fde68a', fontWeight: 700, fontSize: 22, display: 'inline-block' }}
       >
         {finalScore}
       </span>
 
       {/* Split */}
-      <span style={{ color: '#4b5563', fontSize: 12, marginLeft: 4 }}>
+      <span style={{ color: '#4b5563', fontSize: 16, marginLeft: 4 }}>
         vault <span style={{ color: '#34d399' }}>{toVault}</span>
         {' · '}you <span style={{ color: '#fbbf24' }}>{skimmed}</span>
       </span>

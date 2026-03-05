@@ -64,14 +64,13 @@ export function CommunityCards({ cards, selectedIds, onSelect, disabled, deckCou
 
   const sortedCards = useMemo(() => sortCards(cards, sortMode ?? 'dealt'), [cards, sortMode]);
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="flex items-center gap-2">
-        <div className="section-label">Community Cards</div>
-        <div className="text-xs text-gray-700">— used cards are replaced from the deck</div>
+    <div className="flex flex-col items-center gap-2 w-full">
+      <div style={{ fontFamily: "'VT323',monospace", fontSize: 15, color: '#4b5563', letterSpacing: '0.1em' }}>
+        COMMUNITY — used cards auto-replace
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-center gap-2 w-full">
         {/* Cards */}
-        <div className="flex gap-2 p-3 rounded-xl border border-amber-900/30 bg-black/20 relative">
+        <div className="flex gap-1.5 p-3 rounded-xl border border-amber-900/30 bg-black/20">
           {sortedCards.map(card => {
             const isNew = newCardIds.includes(card.id);
             return (
@@ -92,17 +91,15 @@ export function CommunityCards({ cards, selectedIds, onSelect, disabled, deckCou
               </div>
             );
           })}
-          {/* Empty slots if deck ran out */}
           {Array.from({ length: Math.max(0, 3 - cards.length) }).map((_, i) => (
-            <div key={`empty-${i}`} className="w-16 h-24 border border-dashed border-gray-800 rounded-lg flex items-center justify-center text-gray-700 text-xs">
+            <div key={`empty-${i}`} style={{ width: 68, height: 96, border: '1px dashed #374151', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#374151', fontSize: 18 }}>
               —
             </div>
           ))}
         </div>
 
-        {/* Arrow + deck pile */}
-        <div className="flex items-center gap-2 text-gray-700">
-          <span className="text-lg">←</span>
+        {/* Deck pile */}
+        <div className="flex flex-col items-center gap-1">
           <DeckPile count={deckCount} onClick={onDeckClick} />
         </div>
       </div>

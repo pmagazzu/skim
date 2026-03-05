@@ -7,26 +7,18 @@ interface SkimLedgerProps {
   lastBonusDetail: string | null;
 }
 
-export function SkimLedger({ personalChips, skimRate, roundChips, lastScore, lastHandName, lastBonusDetail }: SkimLedgerProps) {
+export function SkimLedger({ personalChips, skimRate, roundChips, lastHandName, lastBonusDetail }: SkimLedgerProps) {
   return (
-    <div className="bg-black/30 border border-white/5 rounded-xl p-3 flex flex-col gap-2">
-      <div className="section-label">Your Cut</div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-500 text-sm">Bank</span>
-        <span className="gold-glow font-bold chip-counter text-lg">{personalChips.toLocaleString()}</span>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+      <div style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: '#fbbf24', letterSpacing: '0.05em', lineHeight: 1 }}>
+        💰{personalChips.toLocaleString()}c
       </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-500 text-sm">Skim rate</span>
-        <span className="text-amber-500 font-semibold">{Math.round(skimRate * 100)}%</span>
+      <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#6b5a3e' }}>
+        {Math.round(skimRate * 100)}% · +{roundChips}c skimmed
       </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-500 text-sm">Skimmed</span>
-        <span className="text-amber-400 font-semibold">+{roundChips.toLocaleString()}</span>
-      </div>
-      {lastScore !== null && (
-        <div className="mt-1 pt-2 border-t border-white/5 text-xs text-emerald-500 font-medium">
-          {lastHandName} → <span className="font-bold">+{lastScore}</span>
-          {lastBonusDetail && <span className="text-amber-600 ml-1">({lastBonusDetail})</span>}
+      {lastHandName && (
+        <div style={{ fontFamily: "'VT323',monospace", fontSize: 11, color: '#4ade80', maxWidth: 120, textAlign: 'right', lineHeight: 1.2 }}>
+          {lastHandName}{lastBonusDetail ? ` (${lastBonusDetail})` : ''}
         </div>
       )}
     </div>

@@ -107,41 +107,49 @@ export function Vault({ chips, target }: VaultProps) {
   const dimColor     = full ? '#052e16' : '#1c1007';
   const glowColor    = full ? 'rgba(74,222,128,0.5)' : ticking ? 'rgba(253,230,138,0.4)' : 'rgba(245,158,11,0.25)';
 
+  const pct = Math.min(1, displayChips / Math.max(1, target));
+  const barColor = full ? '#22c55e' : pct >= 0.7 ? '#fbbf24' : '#ca8a04';
+
   return (
     <div style={{
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center',
-      gap: 2,
-      padding: '5px 8px 4px',
+      alignItems: 'stretch',
+      gap: 3,
+      padding: '5px 8px 5px',
       background: '#080808',
       border: `1px solid ${full ? '#166534' : '#1a1400'}`,
       borderRadius: 8,
       boxShadow: `0 0 16px ${glowColor}, inset 0 1px 0 rgba(255,255,255,0.03)`,
       transition: 'box-shadow 0.4s, border-color 0.4s',
+      width: '100%',
     }}>
-      {/* Label */}
-      <div style={{
-        fontFamily: "'VT323', monospace",
-        fontSize: 11,
-        letterSpacing: '0.2em',
-        color: full ? '#4ade80' : '#5a3e10',
-        textTransform: 'uppercase',
-      }}>
-        {full ? '✦ VAULT FULL ✦' : 'VAULT'}
-      </div>
-
-      {/* Score display */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <LedNumber value={displayChips} maxDigits={maxDigits} color={activeColor} dimColor={dimColor} />
+      {/* Row: label + LED scores */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
         <div style={{
           fontFamily: "'VT323', monospace",
-          fontSize: 12,
-          color: '#3a2a08',
-          lineHeight: 1,
-          paddingBottom: 1,
-        }}>/</div>
-        <LedNumber value={target} maxDigits={maxDigits} color="#6b4e1a" dimColor={dimColor} />
+          fontSize: 11, letterSpacing: '0.2em',
+          color: full ? '#4ade80' : '#5a3e10',
+          textTransform: 'uppercase',
+        }}>
+          {full ? '✦ VAULT FULL ✦' : 'VAULT'}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <LedNumber value={displayChips} maxDigits={maxDigits} color={activeColor} dimColor={dimColor} />
+          <div style={{ fontFamily: "'VT323',monospace", fontSize: 12, color: '#3a2a08', paddingBottom: 1 }}>/</div>
+          <LedNumber value={target} maxDigits={maxDigits} color="#6b4e1a" dimColor={dimColor} />
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ width: '100%', height: 5, background: '#1a1400', borderRadius: 3, overflow: 'hidden', border: '1px solid #2a2000' }}>
+        <div style={{
+          height: '100%', width: `${pct * 100}%`,
+          background: barColor,
+          borderRadius: 3,
+          transition: 'width 0.4s ease, background 0.3s',
+          boxShadow: full ? `0 0 8px ${barColor}` : 'none',
+        }} />
       </div>
     </div>
   );
