@@ -28,6 +28,7 @@ button, [role="button"], a {
   --text-primary: #e9dbc4;
   --text-dim: #8f7a5e;
   --border: #4b3a2a;
+  --scanline-opacity: 0.06;
 }
 
 /* Neon: Cyberpunk — dark navy, cyan/purple */
@@ -96,6 +97,7 @@ button, [role="button"], a {
   --text-primary: #2b2116;
   --text-dim: #6d5840;
   --border: #b79f81;
+  --scanline-opacity: 0.018;
 }
 
 * { box-sizing: border-box; }
@@ -114,6 +116,18 @@ body {
   body { font-size: 26px; }
 }
 
+/* Light mode readability pass */
+[data-theme="smoke"] .text-gray-500,
+[data-theme="smoke"] .text-gray-600,
+[data-theme="smoke"] .text-gray-700,
+[data-theme="smoke"] .text-gray-400 {
+  color: #4b3f30 !important;
+}
+[data-theme="smoke"] .border-white\/5,
+[data-theme="smoke"] .border-white\/10 {
+  border-color: rgba(75,63,48,0.28) !important;
+}
+
 /* ── CRT / Retro overlays ── */
 
 /* Scanlines */
@@ -127,8 +141,8 @@ body::before {
     to bottom,
     transparent 0px,
     transparent 3px,
-    rgba(0, 0, 0, 0.07) 3px,
-    rgba(0, 0, 0, 0.07) 4px
+    rgba(0, 0, 0, var(--scanline-opacity, 0.07)) 3px,
+    rgba(0, 0, 0, var(--scanline-opacity, 0.07)) 4px
   );
 }
 

@@ -557,7 +557,7 @@ function App() {
                 {/* Strip 2: round label | wallet | skim rate */}
                 <div className="felt-top-row-strip">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ fontFamily: "'VT323',monospace", fontSize: 18, color: '#ca8a04', letterSpacing: '0.04em' }}>
+                    <div style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: 'var(--gold-bright)', letterSpacing: '0.03em' }}>
                       R{state.ante} · {state.roundInAnte}/3
                     </div>
                     <MenuButton onClick={() => setShowMenu(true)} />

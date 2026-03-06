@@ -69,12 +69,12 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
     <div className="flex flex-col items-center gap-2">
       {/* Sort controls */}
       <div className="flex items-center gap-1">
-        <span style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#6b7280' }} className="mr-1">Sort:</span>
+        <span style={{ fontFamily: "'VT323',monospace", fontSize: 16, color: 'var(--text-dim)' }} className="mr-1">SORT</span>
         {SORT_OPTIONS.map(o => (
           <button
             key={o.mode}
             onClick={e => handleSortClick(o.mode, e.currentTarget as HTMLButtonElement)}
-            style={{ fontFamily: "'VT323',monospace", fontSize: 14, padding: '3px 8px' }}
+            style={{ fontFamily: "'VT323',monospace", fontSize: 16, padding: '4px 10px' }}
             className={[
               'rounded transition-all',
               sortMode === o.mode
@@ -110,21 +110,21 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
         </div>
       )}
 
-      <div style={{ minHeight: 28, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div style={{ minHeight: 32, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
         {handResult && selectedIds.length > 0 ? (
           <>
-            <span style={{ fontFamily: "'VT323',monospace", fontSize: 20, color: '#fbbf24', letterSpacing: '0.04em' }}>{handResult.name}</span>
+            <span style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: '#fbbf24', letterSpacing: '0.04em' }}>{handResult.name}</span>
             {handLevels[handResult.rank] > 1 && (
-              <span style={{ fontFamily: "'VT323',monospace", fontSize: 17, color: '#a78bfa' }}>
+              <span style={{ fontFamily: "'VT323',monospace", fontSize: 20, color: '#a78bfa' }}>
                 Lv.{handLevels[handResult.rank]}
               </span>
             )}
-            <span style={{ fontFamily: "'VT323',monospace", fontSize: 22, color: scratchMultiplier > 1 ? '#fb923c' : '#ca8a04', fontWeight: 'bold' }}>
+            <span style={{ fontFamily: "'VT323',monospace", fontSize: 28, color: scratchMultiplier > 1 ? '#fb923c' : '#ca8a04', fontWeight: 'bold' }}>
               +{chipPreview.toLocaleString()}c
             </span>
           </>
         ) : (
-          <span style={{ fontFamily: "'VT323',monospace", fontSize: 17, color: '#4b5563' }}>Select 1–5 cards to play</span>
+          <span style={{ fontFamily: "'VT323',monospace", fontSize: 20, color: 'var(--text-dim)' }}>Select cards</span>
         )}
       </div>
 

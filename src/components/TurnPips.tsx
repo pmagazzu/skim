@@ -10,7 +10,8 @@ interface TurnPipsProps {
 
 export function TurnPips({ handsPlayed, maxHands, vault, vaultTarget, turnTimeRemaining }: TurnPipsProps) {
   const handsLeft = maxHands - handsPlayed;
-  const vaultPct = Math.min(1, vault / Math.max(1, vaultTarget));
+  void vault;
+  void vaultTarget;
   const prevPlayed = useRef(handsPlayed);
   const flashIdx = useRef<number | null>(null);
 
@@ -36,15 +37,7 @@ export function TurnPips({ handsPlayed, maxHands, vault, vaultTarget, turnTimeRe
     return '0 0 6px rgba(34,197,94,0.4)';
   }
 
-  // Timer color
-  const timerPct = turnTimeRemaining != null
-    ? turnTimeRemaining / (turnTimeRemaining > 45 ? 60 : 45)
-    : 1;
-  const timerColor = turnTimeRemaining != null && turnTimeRemaining <= 8
-    ? '#ef4444'
-    : turnTimeRemaining != null && turnTimeRemaining <= 15
-    ? '#f59e0b'
-    : '#22c55e';
+  void turnTimeRemaining;
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', justifyContent: 'center' }}>
@@ -54,7 +47,7 @@ export function TurnPips({ handsPlayed, maxHands, vault, vaultTarget, turnTimeRe
         const isFlashing = i === flashIdx.current;
         return (
           <div key={i} style={{
-            width: 16, height: 16, borderRadius: '50%',
+            width: 20, height: 20, borderRadius: '50%',
             background: pipColor(i),
             boxShadow: isActive ? pipGlow(i) : 'none',
             border: `2px solid ${isActive ? pipColor(i) : '#333'}`,
@@ -66,7 +59,7 @@ export function TurnPips({ handsPlayed, maxHands, vault, vaultTarget, turnTimeRe
       })}
       <span style={{
         fontFamily: "'VT323',monospace",
-        fontSize: 18,
+        fontSize: 24,
         color: handsLeft <= 1 ? '#ef4444' : handsLeft <= 2 ? '#f59e0b' : '#6b7280',
         marginLeft: 4,
       }}>
