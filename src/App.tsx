@@ -20,7 +20,6 @@ import { CoopGame } from './pages/CoopGame';
 import { PackOpenModal } from './components/PackOpenModal';
 import { ForgeResultModal } from './components/ForgeResultModal';
 import { Tutorial } from './components/Tutorial';
-import { OpponentArea } from './components/OpponentArea';
 import { DeckViewer } from './components/DeckViewer';
 import { UpgradeType } from './game/gameState';
 
@@ -457,11 +456,8 @@ function App() {
               </div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
                 {([
-                  { id: 'gold',  label: 'GOLD',  swatch: '#ca8a04' },
-                  { id: 'neon',  label: 'NEON',  swatch: '#00bcd4' },
-                  { id: 'blood', label: 'BLOOD', swatch: '#c62828' },
-                  { id: 'ice',   label: 'ICE',   swatch: '#0288d1' },
-                  { id: 'smoke', label: 'SMOKE', swatch: '#757575' },
+                  { id: 'gold',  label: 'DARK',  swatch: '#ca8a04' },
+                  { id: 'smoke', label: 'LIGHT', swatch: '#b0895a' },
                 ] as const).map(t => (
                   <button
                     key={t.id}
@@ -561,12 +557,11 @@ function App() {
                 {/* Strip 2: round label | wallet | skim rate */}
                 <div className="felt-top-row-strip">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ fontFamily: "'VT323',monospace", fontSize: 22, color: '#ca8a04', letterSpacing: '0.06em' }}>
-                      Round {state.ante} · Lvl {state.roundInAnte}/3
+                    <div style={{ fontFamily: "'VT323',monospace", fontSize: 18, color: '#ca8a04', letterSpacing: '0.04em' }}>
+                      R{state.ante} · {state.roundInAnte}/3
                     </div>
                     <MenuButton onClick={() => setShowMenu(true)} />
                   </div>
-                  <OpponentArea />
                   <SkimLedger
                     personalChips={state.personalChips}
                     skimRate={state.skimRate}
@@ -577,17 +572,10 @@ function App() {
                   />
                 </div>
 
-                {/* Strip 3: active bounties inline */}
+                {/* Strip 3: bounties condensed */}
                 {state.activeBounties.length > 0 && (
-                  <div className="flex flex-row flex-wrap gap-1" style={{ width: '100%' }}>
-                    {state.activeBounties.map(b => (
-                      <div key={b.id} className={[
-                        'px-2 py-0.5 rounded',
-                        b.completed ? 'text-emerald-600 opacity-50 line-through' : 'text-amber-700',
-                      ].join(' ')} style={{ fontFamily: "'VT323',monospace", fontSize: 15 }}>
-                        {b.completed ? '✓' : '◎'} {b.title}
-                      </div>
-                    ))}
+                  <div style={{ width: '100%', fontFamily: "'VT323',monospace", fontSize: 13, color: '#6b5a3e', textAlign: 'right' }}>
+                    🎯 {state.activeBounties.filter(b => !b.completed).length} active
                   </div>
                 )}
               </div>

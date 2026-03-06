@@ -440,11 +440,8 @@ export function Shop({
         <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: 'var(--text-dim)', letterSpacing: '0.1em', marginBottom: 8, textAlign: 'center' }}>COLOR THEME</div>
         <div className="flex gap-2 justify-center flex-wrap">
           {([
-            { id: 'gold',  label: '🟡', title: 'GOLD'  },
-            { id: 'neon',  label: '🔵', title: 'NEON'  },
-            { id: 'blood', label: '🔴', title: 'BLOOD' },
-            { id: 'ice',   label: '🩵', title: 'ICE'   },
-            { id: 'smoke', label: '⬜', title: 'SMOKE' },
+            { id: 'gold',  label: '🌙', title: 'DARK'  },
+            { id: 'smoke', label: '☀️', title: 'LIGHT' },
           ] as const).map(t => (
             <button key={t.id} onClick={() => onSetTheme(t.id)} title={t.title}
               style={{

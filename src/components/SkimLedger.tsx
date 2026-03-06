@@ -7,20 +7,15 @@ interface SkimLedgerProps {
   lastBonusDetail: string | null;
 }
 
-export function SkimLedger({ personalChips, skimRate, roundChips, lastHandName, lastBonusDetail }: SkimLedgerProps) {
+export function SkimLedger({ personalChips, skimRate }: SkimLedgerProps) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
-      <div style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: '#fbbf24', letterSpacing: '0.05em', lineHeight: 1 }}>
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+      <div style={{ fontFamily: "'VT323',monospace", fontSize: 22, color: '#fbbf24', letterSpacing: '0.03em', lineHeight: 1 }}>
         💰{personalChips.toLocaleString()}c
       </div>
-      <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#6b5a3e' }}>
-        {Math.round(skimRate * 100)}% · +{roundChips}c skimmed
+      <div style={{ fontFamily: "'VT323',monospace", fontSize: 13, color: '#6b5a3e' }}>
+        skim {Math.round(skimRate * 100)}%
       </div>
-      {lastHandName && (
-        <div style={{ fontFamily: "'VT323',monospace", fontSize: 11, color: '#4ade80', maxWidth: 120, textAlign: 'right', lineHeight: 1.2 }}>
-          {lastHandName}{lastBonusDetail ? ` (${lastBonusDetail})` : ''}
-        </div>
-      )}
     </div>
   );
 }
