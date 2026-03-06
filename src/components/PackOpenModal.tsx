@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { PendingPackResult } from '../game/gameState';
-import { playPackOpen, playPurchase } from '../audio/sounds';
+import { playPackOpen, playPurchase, playPackCardFlip } from '../audio/sounds';
 import { rankName, suitSymbol } from '../game/deck';
 import type { Card } from '../game/deck';
 
@@ -41,7 +41,10 @@ const PACK_COLORS: Record<string, string> = {
 function MiniCard({ card, revealed, delay }: { card: Card; revealed: boolean; delay: number }) {
   const [show, setShow] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setShow(true), delay);
+    const t = setTimeout(() => {
+      playPackCardFlip(Math.floor(delay / 220));
+      setShow(true);
+    }, delay);
     return () => clearTimeout(t);
   }, [delay]);
 

@@ -388,6 +388,12 @@ export function playPackOpen() {
   [420, 560, 740].forEach((f, i) => setTimeout(() => playBloop(f, 0.08, 'square', 0.34 - i * 0.05), i * 45));
 }
 
+/** Pack per-card flip tick (card fan rustle) */
+export function playPackCardFlip(index = 0) {
+  playNoise(0.012, 0.45, 5200 - index * 180, 0.5);
+  playBloop(650 + index * 35, 0.035, 'square', 0.2);
+}
+
 /** Forge hammer hit */
 export function playForgeHit() {
   playThud(0.95, 85);
