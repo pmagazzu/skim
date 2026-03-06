@@ -21,6 +21,17 @@ const DEFAULT_VOLUME = 0.35;
 const CROSSFADE_MS   = 1500;
 
 let audioCtx: AudioContext | null = null;
+
+function createAudioContext(): AudioContext | null {
+  try {
+    const W = window as Window & { webkitAudioContext?: typeof AudioContext };
+    const Ctor = window.AudioContext ?? W.webkitAudioContext;
+    if (!Ctor) return null;
+    return new Ctor();
+  } catch {
+    return null;
+  }
+}
 const bufferCache = new Map<string, AudioBuffer | null>();
 
 // Currently playing node + gain
@@ -36,9 +47,9 @@ let victoryVariantIndex = 0;
 
 export function initMusic(): void {
   if (!audioCtx) {
-    audioCtx = new AudioContext();
+    audioCtx = createAudioContext();
   }
-  if (audioCtx.state === 'suspended') {
+  if (audioCtx?.state === 'suspended') {
     audioCtx.resume().catch(() => {/* ignore */});
   }
 }
