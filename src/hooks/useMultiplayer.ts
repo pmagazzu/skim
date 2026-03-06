@@ -2,6 +2,8 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 
 const WS_URL = (() => {
+  const envUrl = import.meta.env.VITE_WS_URL as string | undefined;
+  if (envUrl && envUrl.trim()) return envUrl.trim();
   const secure = window.location.protocol === 'https:';
   return `${secure ? 'wss' : 'ws'}://${window.location.hostname}:5174`;
 })();
@@ -52,17 +54,29 @@ function ensureSocket() {
     return ({ readyState: WebSocket.CLOSED } as any) as WebSocket;
   }
 
+  const connectTimer = window.setTimeout(() => {
+    if (sharedSocket && sharedSocket.readyState !== WebSocket.OPEN) {
+      emitError(`Cannot reach co-op server at ${WS_URL}`);
+      emitConnected(false);
+      try { sharedSocket.close(); } catch { /* ignore */ }
+    }
+  }, 5000);
+
   sharedSocket.onopen = () => {
+    window.clearTimeout(connectTimer);
     emitConnected(true);
     emitError(null);
   };
 
   sharedSocket.onclose = () => {
+    window.clearTimeout(connectTimer);
     emitConnected(false);
+    emitError(`Disconnected from co-op server (${WS_URL})`);
   };
 
   sharedSocket.onerror = () => {
-    emitError('Connection failed');
+    window.clearTimeout(connectTimer);
+    emitError(`Connection failed (${WS_URL})`);
     emitConnected(false);
   };
 
