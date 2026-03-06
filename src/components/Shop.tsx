@@ -37,23 +37,46 @@ const FOIL_GRADIENT: Record<BoosterTypeValue, string> = {
   BOUNTY: 'linear-gradient(145deg,#3e1111,#ad3333 45%,#3f1212)',
 };
 
-function FoilPack({ type, sold }: { type: BoosterTypeValue; sold?: boolean }) {
+const BOOSTER_EXPLAIN: Record<BoosterTypeValue, string> = {
+  CHIP: 'Contains 2-4 chips · pick 1',
+  HAND: 'Contains hand upgrades · pick 1',
+  UTILITY: 'Contains utility upgrades · pick 1',
+  FORGE: 'Contains forge paths · pick 1',
+  WILDCARD: 'Contains mixed rewards · pick 1',
+  BOUNTY: 'Contains contracts · pick 1',
+};
+
+function FoilPack({ type, rarity, sold }: { type: BoosterTypeValue; rarity: string; sold?: boolean }) {
+  const rareGlow = rarity === 'legendary'
+    ? '0 0 18px rgba(245,158,11,0.45), 0 8px 18px rgba(0,0,0,0.45)'
+    : rarity === 'rare'
+      ? '0 0 14px rgba(168,85,247,0.35), 0 8px 18px rgba(0,0,0,0.45)'
+      : '0 6px 16px rgba(0,0,0,0.35)';
+  const stars = rarity === 'legendary' ? '★★★' : rarity === 'rare' ? '★★' : rarity === 'uncommon' ? '★' : '•';
+
   return (
     <div style={{
-      width: 70,
-      height: 92,
-      borderRadius: 10,
+      width: 72,
+      height: 98,
+      borderRadius: 11,
       background: FOIL_GRADIENT[type],
-      border: '1px solid rgba(255,255,255,0.22)',
-      boxShadow: sold ? 'none' : '0 6px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.35)',
+      border: '1px solid rgba(255,255,255,0.28)',
+      boxShadow: sold ? 'none' : `${rareGlow}, inset 0 1px 0 rgba(255,255,255,0.36)`,
       position: 'relative',
       overflow: 'hidden',
       opacity: sold ? 0.45 : 1,
       flexShrink: 0,
+      transform: sold ? 'none' : 'perspective(500px) rotateX(2deg)',
     }}>
-      <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0, background: 'repeating-linear-gradient(115deg, rgba(255,255,255,0.14) 0px, rgba(255,255,255,0.14) 4px, transparent 4px, transparent 10px)' }} />
+      <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0, background: 'repeating-linear-gradient(112deg, rgba(255,255,255,0.18) 0px, rgba(255,255,255,0.18) 3px, transparent 3px, transparent 9px)' }} />
+      <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0, background: 'radial-gradient(circle at 20% 12%, rgba(255,255,255,0.4), transparent 38%)' }} />
+
+      <div style={{ position: 'absolute', left: 6, right: 6, top: 6, textAlign: 'center', fontFamily: "'VT323',monospace", fontSize: 10, letterSpacing: '0.14em', color: '#fff7e1', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
+        {stars}
+      </div>
+
       <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.65))' }}>
-        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden>
+        <svg width="36" height="36" viewBox="0 0 34 34" aria-hidden>
           <circle cx="17" cy="17" r="15" fill="rgba(0,0,0,0.25)" stroke={BOOSTER_COLOR[type]} strokeWidth="1.6" />
           {type === 'CHIP' && <>
             <circle cx="17" cy="17" r="8" fill="none" stroke={BOOSTER_COLOR[type]} strokeWidth="1.8" />
@@ -82,8 +105,9 @@ function FoilPack({ type, sold }: { type: BoosterTypeValue; sold?: boolean }) {
           </>}
         </svg>
       </div>
-      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 5, textAlign: 'center', fontFamily: "'VT323',monospace", fontSize: 11, letterSpacing: '0.08em', color: '#f5e9d0' }}>
-        BOOSTER
+
+      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 4, textAlign: 'center', fontFamily: "'VT323',monospace", fontSize: 10, letterSpacing: '0.09em', color: '#fff4dc', textShadow: '0 1px 2px rgba(0,0,0,0.55)' }}>
+        FOIL PACK
       </div>
     </div>
   );
@@ -147,7 +171,7 @@ export function Shop({ items, personalChips, onBuy, onRerollBoosters, boosterRer
           return (
             <div key={item.id} className="shop-card" style={{ borderColor: frame.border, boxShadow: frame.glow, opacity: sold ? 0.55 : 1 }}>
               <div className="flex items-center gap-3">
-                <FoilPack type={item.boosterType} sold={sold} />
+                <FoilPack type={item.boosterType} rarity={item.rarity} sold={sold} />
                 <div className="flex-1 min-w-0">
                   <div style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: 'var(--text-primary)', lineHeight: 1 }}>
                     {item.label}
@@ -155,6 +179,11 @@ export function Shop({ items, personalChips, onBuy, onRerollBoosters, boosterRer
                   <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: sold ? 'var(--text-dim)' : 'color-mix(in srgb, var(--text-dim) 88%, white 12%)' }}>
                     {sold ? 'SOLD' : item.subtitle}
                   </div>
+                  {!sold && (
+                    <div style={{ fontFamily: "'VT323',monospace", fontSize: 12, color: 'var(--text-dim)' }}>
+                      {BOOSTER_EXPLAIN[item.boosterType]}
+                    </div>
+                  )}
                   <div style={{ fontFamily: "'VT323',monospace", color: 'var(--text-dim)', fontSize: 14, letterSpacing: '0.08em', marginTop: 2 }}>
                     {item.rarity.toUpperCase()}
                   </div>
