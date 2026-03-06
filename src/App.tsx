@@ -290,6 +290,23 @@ function App() {
     }
   }
 
+  // Unlock music on first user interaction anywhere (mobile autoplay policy)
+  useEffect(() => {
+    function unlockMusic() {
+      if (!musicInited.current) {
+        handleFirstInteraction();
+      }
+    }
+    window.addEventListener('pointerdown', unlockMusic, { once: true, passive: true });
+    window.addEventListener('touchstart', unlockMusic, { once: true, passive: true });
+    window.addEventListener('keydown', unlockMusic, { once: true, passive: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlockMusic);
+      window.removeEventListener('touchstart', unlockMusic);
+      window.removeEventListener('keydown', unlockMusic);
+    };
+  }, []);
+
   // Co-op mode routing
   if (appMode === 'lobby') {
     return <Lobby
