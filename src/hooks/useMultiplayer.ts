@@ -1,7 +1,10 @@
 // WebSocket hook for SKIM co-op multiplayer
 import { useEffect, useRef, useCallback, useState } from 'react';
 
-const WS_URL = `ws://${window.location.hostname}:5174`;
+const WS_URL = (() => {
+  const secure = window.location.protocol === 'https:';
+  return `${secure ? 'wss' : 'ws'}://${window.location.hostname}:5174`;
+})();
 
 export type ServerMsg =
   | { type: 'ROOM_CREATED'; code: string; playerIndex: 0 }
@@ -38,7 +41,16 @@ function ensureSocket() {
     return sharedSocket;
   }
 
-  sharedSocket = new WebSocket(WS_URL);
+  try {
+    sharedSocket = new WebSocket(WS_URL);
+  } catch {
+    emitError('Multiplayer socket failed to initialize');
+    emitConnected(false);
+    // Return a closed-ish placeholder to avoid crashing callers.
+    // Next interaction can retry ensureSocket().
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return ({ readyState: WebSocket.CLOSED } as any) as WebSocket;
+  }
 
   sharedSocket.onopen = () => {
     emitConnected(true);
