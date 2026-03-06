@@ -4,24 +4,28 @@ export type MusicTrack = 'menu' | 'gameplay' | 'shop' | 'tension' | 'victory';
 
 const TRACK_FILES: Record<MusicTrack, string> = {
   menu:     '/music/menu.mp3',
-  gameplay: '/music/gameplay.mp3',
+  gameplay: '/music/gameplay-a.mp3', // fallback/default, gameplay uses rotating variants below
   shop:     '/music/shop.mp3',
   tension:  '/music/tension.mp3',
   victory:  '/music/victory.mp3',
 };
 
+const GAMEPLAY_VARIANTS = ['/music/gameplay-a.mp3', '/music/gameplay-b.mp3'] as const;
+
 const DEFAULT_VOLUME = 0.35;
 const CROSSFADE_MS   = 1500;
 
 let audioCtx: AudioContext | null = null;
-const bufferCache = new Map<MusicTrack, AudioBuffer | null>();
+const bufferCache = new Map<string, AudioBuffer | null>();
 
 // Currently playing node + gain
 let currentNode:  AudioBufferSourceNode | null = null;
 let currentGain:  GainNode | null = null;
 let currentTrack: MusicTrack | null = null;
+let currentPath: string | null = null;
 let masterVolume  = DEFAULT_VOLUME;
 let muted         = false;
+let gameplayVariantIndex = 0;
 
 export function initMusic(): void {
   if (!audioCtx) {
@@ -36,20 +40,20 @@ function getCtx(): AudioContext | null {
   return audioCtx;
 }
 
-async function loadBuffer(track: MusicTrack): Promise<AudioBuffer | null> {
-  if (bufferCache.has(track)) return bufferCache.get(track)!;
+async function loadBufferByPath(path: string): Promise<AudioBuffer | null> {
+  if (bufferCache.has(path)) return bufferCache.get(path)!;
   const ctx = getCtx();
   if (!ctx) return null;
   try {
-    const res = await fetch(TRACK_FILES[track]);
+    const res = await fetch(path);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const ab = await res.arrayBuffer();
     const buf = await ctx.decodeAudioData(ab);
-    bufferCache.set(track, buf);
+    bufferCache.set(path, buf);
     return buf;
   } catch {
     // File doesn't exist yet — silently no-op
-    bufferCache.set(track, null);
+    bufferCache.set(path, null);
     return null;
   }
 }
@@ -71,11 +75,27 @@ function effectiveVol(): number {
 
 class MusicManager {
   async play(track: MusicTrack): Promise<void> {
-    if (track === currentTrack) return;
+    // Resolve source file path.
+    // Gameplay alternates A/B each time we ENTER gameplay (from another track),
+    // but stays on the current variant while gameplay is already active.
+    let path: string;
+    if (track === 'gameplay') {
+      if (currentTrack === 'gameplay' && currentPath) {
+        path = currentPath;
+      } else {
+        path = GAMEPLAY_VARIANTS[(gameplayVariantIndex++) % GAMEPLAY_VARIANTS.length];
+      }
+    } else {
+      path = TRACK_FILES[track];
+    }
+
+    // If exact same track+file already playing, no-op.
+    if (track === currentTrack && path === currentPath) return;
+
     const ctx = getCtx();
     if (!ctx) return;
 
-    const buf = await loadBuffer(track);
+    const buf = await loadBufferByPath(path);
     if (!buf) return; // file not available
 
     const now = ctx.currentTime;
@@ -103,6 +123,7 @@ class MusicManager {
     currentNode  = newNode;
     currentGain  = newGain;
     currentTrack = track;
+    currentPath  = path;
   }
 
   stop(): void {
@@ -122,6 +143,7 @@ class MusicManager {
     currentNode  = null;
     currentGain  = null;
     currentTrack = null;
+    currentPath  = null;
   }
 
   setVolume(v: number): void {
