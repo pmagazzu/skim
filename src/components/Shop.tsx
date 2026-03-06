@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import type { ShopItem, UpgradeTypeValue } from '../game/gameState';
 import { UPGRADE_DEFS } from '../game/gameState';
 import type { Bounty } from '../game/bounties';
@@ -206,25 +206,15 @@ export function Shop({
   const [tab, setTab] = useState<ShopTab>('chips');
   const [soldIds, setSoldIds] = useState<Set<string>>(new Set());
 
-  // Snapshot items on shop open (new set of item IDs = new shop visit)
+  // Snapshot items once per shop mount.
+  // This prevents reflow when purchased items are removed from live state.
+  // New shop visits remount this component, so snapshot refreshes naturally.
   const snapshotRef = useRef<ShopItem[]>([]);
-  const snapshotKeyRef = useRef<string>('');
-  const currentKey = items.map(i => i.id).sort().join(',');
-  if (currentKey !== snapshotKeyRef.current && items.length > 0) {
+  if (snapshotRef.current.length === 0 && items.length > 0) {
     snapshotRef.current = items;
-    snapshotKeyRef.current = currentKey;
-    // Reset sold tracking on new shop
   }
-  useEffect(() => {
-    if (items.length > 0) {
-      const key = items.map(i => i.id).sort().join(',');
-      if (key !== snapshotKeyRef.current) {
-        setSoldIds(new Set());
-      }
-    }
-  }, [currentKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Use stable snapshot for rendering; live `items` only for affordability check
+  // Use stable snapshot for rendering; live `items` only for sold detection
   const stableItems = snapshotRef.current.length > 0 ? snapshotRef.current : items;
   const liveIds = new Set(items.map(i => i.id));
 
