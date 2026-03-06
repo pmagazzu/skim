@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { playCoinStreamTick } from '../audio/sounds';
 
 interface VaultProps {
   chips: number;
@@ -28,6 +29,7 @@ export function Vault({ chips, target }: VaultProps) {
       count++;
       current += step;
       setDisplayChips(Math.round(count >= steps ? to : current));
+      if (to > from) playCoinStreamTick(count);
       if (count >= steps && tickRef.current) clearInterval(tickRef.current);
     }, 35);
 

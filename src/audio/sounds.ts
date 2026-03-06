@@ -207,6 +207,13 @@ export function playVaultChunk() {
   );
 }
 
+/** Fast coin stream tick for wallet/vault counting animations */
+export function playCoinStreamTick(step = 0) {
+  const f = 640 + (step % 5) * 40;
+  playNoise(0.010, 0.45, 5200, 0.45);
+  playBloop(f, 0.04, 'square', 0.22);
+}
+
 const LEGENDARY_CHIPS = new Set(['DIAMOND', 'PLATINUM', 'MOONSTONE', 'JOKER', 'AURORA', 'ECHO']);
 
 /** Chip fire bloop — each chip has a distinct feel */
