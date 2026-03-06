@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import type { ShopItem } from '../game/gameState';
+import type { BoosterTypeValue, ShopItem } from '../game/gameState';
 import { playButtonPress, playButtonPunch } from '../audio/sounds';
 
 interface ShopProps {
@@ -17,6 +17,49 @@ function rarityFrame(rarity: string) {
   if (rarity === 'rare') return { border: '#a855f7', glow: '0 0 14px rgba(168,85,247,0.28)' };
   if (rarity === 'uncommon') return { border: '#3b82f6', glow: '0 0 10px rgba(59,130,246,0.22)' };
   return { border: '#6b7280', glow: 'none' };
+}
+
+const BOOSTER_ICON: Record<BoosterTypeValue, string> = {
+  CHIP: '🪙',
+  HAND: '🖐️',
+  UTILITY: '🎲',
+  FORGE: '⚒️',
+  WILDCARD: '✨',
+  BOUNTY: '🎯',
+};
+
+const FOIL_GRADIENT: Record<BoosterTypeValue, string> = {
+  CHIP: 'linear-gradient(145deg,#50320c,#b78329 45%,#5a390e)',
+  HAND: 'linear-gradient(145deg,#1f3657,#4f78c8 45%,#233b60)',
+  UTILITY: 'linear-gradient(145deg,#3c4b12,#95ad2f 45%,#3b4a12)',
+  FORGE: 'linear-gradient(145deg,#4d1f10,#c65a28 45%,#4c1f10)',
+  WILDCARD: 'linear-gradient(145deg,#3f1d62,#9b59d0 45%,#1f4d66)',
+  BOUNTY: 'linear-gradient(145deg,#3e1111,#ad3333 45%,#3f1212)',
+};
+
+function FoilPack({ type, sold }: { type: BoosterTypeValue; sold?: boolean }) {
+  return (
+    <div style={{
+      width: 70,
+      height: 92,
+      borderRadius: 10,
+      background: FOIL_GRADIENT[type],
+      border: '1px solid rgba(255,255,255,0.22)',
+      boxShadow: sold ? 'none' : '0 6px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.35)',
+      position: 'relative',
+      overflow: 'hidden',
+      opacity: sold ? 0.45 : 1,
+      flexShrink: 0,
+    }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(115deg, rgba(255,255,255,0.14) 0px, rgba(255,255,255,0.14) 4px, transparent 4px, transparent 10px)' }} />
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.65))' }}>
+        {BOOSTER_ICON[type]}
+      </div>
+      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 5, textAlign: 'center', fontFamily: "'VT323',monospace", fontSize: 11, letterSpacing: '0.08em', color: '#f5e9d0' }}>
+        BOOSTER
+      </div>
+    </div>
+  );
 }
 
 export function Shop({ items, personalChips, onBuy, onRerollBoosters, boosterRerollCost, onViewDeck, onEndShop }: ShopProps) {
@@ -55,24 +98,31 @@ export function Shop({ items, personalChips, onBuy, onRerollBoosters, boosterRer
           const canBuy = !sold && personalChips >= item.cost;
           const frame = rarityFrame(item.rarity);
           return (
-            <div key={item.id} className="shop-card" style={{ borderColor: frame.border, boxShadow: frame.glow, opacity: sold ? 0.4 : 1 }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: '#f8d082' }}>{item.label}</div>
-                  <div style={{ fontFamily: "'VT323',monospace", fontSize: 16, color: '#9ca3af' }}>{sold ? 'Sold' : item.subtitle}</div>
+            <div key={item.id} className="shop-card" style={{ borderColor: frame.border, boxShadow: frame.glow, opacity: sold ? 0.55 : 1 }}>
+              <div className="flex items-center gap-3">
+                <FoilPack type={item.boosterType} sold={sold} />
+                <div className="flex-1 min-w-0">
+                  <div style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: '#f8d082', lineHeight: 1 }}>
+                    {item.label}
+                  </div>
+                  <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#9ca3af' }}>
+                    {sold ? 'SOLD' : item.subtitle}
+                  </div>
+                  <div style={{ fontFamily: "'VT323',monospace", color: '#6b7280', fontSize: 14, letterSpacing: '0.08em', marginTop: 2 }}>
+                    {item.rarity.toUpperCase()}
+                  </div>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: '#fbbf24' }}>{sold ? '—' : `${item.cost}c`}</span>
+                    <button
+                      onClick={canBuy ? () => { playButtonPunch(); buy(item.id); } : undefined}
+                      disabled={!canBuy}
+                      className={canBuy ? 'btn-primary' : 'btn-secondary opacity-40'}
+                      style={{ fontSize: 14, padding: '6px 14px' }}
+                    >
+                      {sold ? 'SOLD' : canBuy ? 'BUY' : 'CAN\'T'}
+                    </button>
+                  </div>
                 </div>
-                <div style={{ fontFamily: "'VT323',monospace", color: '#6b7280', fontSize: 15 }}>{item.rarity.toUpperCase()}</div>
-              </div>
-              <div className="mt-2 flex items-center justify-between">
-                <span style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: '#fbbf24' }}>{sold ? '—' : `${item.cost}c`}</span>
-                <button
-                  onClick={canBuy ? () => { playButtonPunch(); buy(item.id); } : undefined}
-                  disabled={!canBuy}
-                  className={canBuy ? 'btn-primary' : 'btn-secondary opacity-40'}
-                  style={{ fontSize: 14, padding: '6px 14px' }}
-                >
-                  {sold ? 'SOLD' : canBuy ? 'BUY' : 'CAN\'T'}
-                </button>
               </div>
             </div>
           );
