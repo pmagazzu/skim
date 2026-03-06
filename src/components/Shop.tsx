@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import type { BoosterTypeValue, ShopItem } from '../game/gameState';
 import { playButtonPress, playButtonPunch } from '../audio/sounds';
 
@@ -19,13 +19,13 @@ function rarityFrame(rarity: string) {
   return { border: '#6b7280', glow: 'none' };
 }
 
-const BOOSTER_ICON: Record<BoosterTypeValue, string> = {
-  CHIP: '🪙',
-  HAND: '🖐️',
-  UTILITY: '🎲',
-  FORGE: '⚒️',
-  WILDCARD: '✨',
-  BOUNTY: '🎯',
+const BOOSTER_COLOR: Record<BoosterTypeValue, string> = {
+  CHIP: '#ffd166',
+  HAND: '#93c5fd',
+  UTILITY: '#bef264',
+  FORGE: '#fb923c',
+  WILDCARD: '#c4b5fd',
+  BOUNTY: '#fda4af',
 };
 
 const FOIL_GRADIENT: Record<BoosterTypeValue, string> = {
@@ -51,9 +51,36 @@ function FoilPack({ type, sold }: { type: BoosterTypeValue; sold?: boolean }) {
       opacity: sold ? 0.45 : 1,
       flexShrink: 0,
     }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(115deg, rgba(255,255,255,0.14) 0px, rgba(255,255,255,0.14) 4px, transparent 4px, transparent 10px)' }} />
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.65))' }}>
-        {BOOSTER_ICON[type]}
+      <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0, background: 'repeating-linear-gradient(115deg, rgba(255,255,255,0.14) 0px, rgba(255,255,255,0.14) 4px, transparent 4px, transparent 10px)' }} />
+      <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.65))' }}>
+        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden>
+          <circle cx="17" cy="17" r="15" fill="rgba(0,0,0,0.25)" stroke={BOOSTER_COLOR[type]} strokeWidth="1.6" />
+          {type === 'CHIP' && <>
+            <circle cx="17" cy="17" r="8" fill="none" stroke={BOOSTER_COLOR[type]} strokeWidth="1.8" />
+            <circle cx="17" cy="17" r="3" fill={BOOSTER_COLOR[type]} />
+          </>}
+          {type === 'HAND' && <path d="M10 22 L10 12 L13 12 L13 18 L15 18 L15 10 L18 10 L18 18 L20 18 L20 11 L23 11 L23 18 L25 18 L25 14 L27 14 L27 22 Z" fill={BOOSTER_COLOR[type]} />}
+          {type === 'UTILITY' && <>
+            <rect x="10" y="10" width="6" height="6" fill={BOOSTER_COLOR[type]} />
+            <rect x="18" y="18" width="6" height="6" fill={BOOSTER_COLOR[type]} />
+            <rect x="18" y="10" width="6" height="6" fill="none" stroke={BOOSTER_COLOR[type]} strokeWidth="1.5" />
+            <rect x="10" y="18" width="6" height="6" fill="none" stroke={BOOSTER_COLOR[type]} strokeWidth="1.5" />
+          </>}
+          {type === 'FORGE' && <>
+            <rect x="9" y="20" width="12" height="4" fill={BOOSTER_COLOR[type]} />
+            <rect x="19" y="12" width="8" height="4" fill={BOOSTER_COLOR[type]} />
+            <rect x="23" y="16" width="2" height="8" fill={BOOSTER_COLOR[type]} />
+          </>}
+          {type === 'WILDCARD' && <path d="M17 8 L19.5 14.5 L26.5 14.5 L21 18.8 L23.2 25.5 L17 21.3 L10.8 25.5 L13 18.8 L7.5 14.5 L14.5 14.5 Z" fill={BOOSTER_COLOR[type]} />}
+          {type === 'BOUNTY' && <>
+            <circle cx="17" cy="17" r="8" fill="none" stroke={BOOSTER_COLOR[type]} strokeWidth="1.8" />
+            <circle cx="17" cy="17" r="3" fill={BOOSTER_COLOR[type]} />
+            <line x1="17" y1="6" x2="17" y2="11" stroke={BOOSTER_COLOR[type]} strokeWidth="1.5" />
+            <line x1="17" y1="23" x2="17" y2="28" stroke={BOOSTER_COLOR[type]} strokeWidth="1.5" />
+            <line x1="6" y1="17" x2="11" y2="17" stroke={BOOSTER_COLOR[type]} strokeWidth="1.5" />
+            <line x1="23" y1="17" x2="28" y2="17" stroke={BOOSTER_COLOR[type]} strokeWidth="1.5" />
+          </>}
+        </svg>
       </div>
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 5, textAlign: 'center', fontFamily: "'VT323',monospace", fontSize: 11, letterSpacing: '0.08em', color: '#f5e9d0' }}>
         BOOSTER
@@ -63,13 +90,22 @@ function FoilPack({ type, sold }: { type: BoosterTypeValue; sold?: boolean }) {
 }
 
 export function Shop({ items, personalChips, onBuy, onRerollBoosters, boosterRerollCost, onViewDeck, onEndShop }: ShopProps) {
-  const [soldIds, setSoldIds] = useState<Set<string>>(new Set());
   const snapshotRef = useRef<ShopItem[]>([]);
-  if (snapshotRef.current.length === 0 && items.length > 0) snapshotRef.current = items;
+  const idsKeyRef = useRef('');
+
+  const idsKey = items.map(i => i.id).sort().join('|');
+  useEffect(() => {
+    // Refresh snapshot only when OFFER IDs change (new visit / reroll).
+    if (idsKey && idsKey !== idsKeyRef.current) {
+      snapshotRef.current = items;
+      idsKeyRef.current = idsKey;
+    }
+  }, [idsKey, items]);
+
   const stableItems = snapshotRef.current.length > 0 ? snapshotRef.current : items;
+  const liveById = new Map(items.map(i => [i.id, i]));
 
   function buy(id: string) {
-    setSoldIds(prev => new Set([...prev, id]));
     onBuy(id);
   }
 
@@ -94,8 +130,10 @@ export function Shop({ items, personalChips, onBuy, onRerollBoosters, boosterRer
 
       <div className="grid grid-cols-1 gap-2">
         {stableItems.slice(0, 5).map(item => {
-          const sold = soldIds.has(item.id) || item.cost === 0;
-          const canBuy = !sold && personalChips >= item.cost;
+          const live = liveById.get(item.id);
+          const sold = !live || live.cost === 0;
+          const effectiveCost = live?.cost ?? item.cost;
+          const canBuy = !sold && personalChips >= effectiveCost;
           const frame = rarityFrame(item.rarity);
           return (
             <div key={item.id} className="shop-card" style={{ borderColor: frame.border, boxShadow: frame.glow, opacity: sold ? 0.55 : 1 }}>
@@ -112,7 +150,7 @@ export function Shop({ items, personalChips, onBuy, onRerollBoosters, boosterRer
                     {item.rarity.toUpperCase()}
                   </div>
                   <div className="mt-2 flex items-center justify-between">
-                    <span style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: '#fbbf24' }}>{sold ? '—' : `${item.cost}c`}</span>
+                    <span style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: '#fbbf24' }}>{sold ? '—' : `${effectiveCost}c`}</span>
                     <button
                       onClick={canBuy ? () => { playButtonPunch(); buy(item.id); } : undefined}
                       disabled={!canBuy}
