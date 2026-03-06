@@ -77,12 +77,12 @@ function MenuPanel({ open, onClose, onDevWin, onCatalog, onTutorial, onMainMenu,
             📖 CHIP CATALOG
           </button>
           {onTutorial && (
-            <button onClick={() => { onClose(); onTutorial(); }} style={{ width: '100%', padding: '12px 0', borderRadius: 10, cursor: 'pointer', background: 'rgba(255,255,255,0.03)', border: '1px solid #3a2e1e', color: '#9ca3af', fontFamily: "'VT323',monospace", fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <button onClick={() => { playButtonPress(); onClose(); onTutorial(); }} style={{ width: '100%', padding: '12px 0', borderRadius: 10, cursor: 'pointer', background: 'rgba(255,255,255,0.03)', border: '1px solid #3a2e1e', color: '#9ca3af', fontFamily: "'VT323',monospace", fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
               ? HOW TO PLAY
             </button>
           )}
           {onMainMenu && (
-            <button onClick={() => { onClose(); onMainMenu(); }} style={{ width: '100%', padding: '12px 0', borderRadius: 10, cursor: 'pointer', background: 'rgba(255,255,255,0.02)', border: '1px solid #2a2520', color: '#4b5563', fontFamily: "'VT323',monospace", fontSize: 19 }}>
+            <button onClick={() => { playButtonPress(); onClose(); onMainMenu(); }} style={{ width: '100%', padding: '12px 0', borderRadius: 10, cursor: 'pointer', background: 'rgba(255,255,255,0.02)', border: '1px solid #2a2520', color: '#4b5563', fontFamily: "'VT323',monospace", fontSize: 19 }}>
               ← MAIN MENU
             </button>
           )}
@@ -117,7 +117,7 @@ function MenuPanel({ open, onClose, onDevWin, onCatalog, onTutorial, onMainMenu,
 function MenuButton({ onClick }: { onClick: () => void }) {
   return (
     <button
-      onClick={onClick}
+      onClick={() => { playButtonPress(); onClick(); }}
       style={{
         fontFamily: "'VT323',monospace", fontSize: 17,
         padding: '5px 14px', borderRadius: 7, cursor: 'pointer',
@@ -321,7 +321,7 @@ function App() {
           <div style={{ fontFamily: "'VT323',monospace", fontSize: 28, color: '#3a2e1e', letterSpacing: '0.3em' }}>♠ ♥ ♦ ♣</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%' }}>
             <button
-              onClick={() => { handleFirstInteraction(); setAppScreen('game'); }}
+              onClick={() => { handleFirstInteraction(); playRoundWin(); setAppScreen('game'); }}
               style={{
                 width: '100%', padding: '18px 0', borderRadius: 12, cursor: 'pointer',
                 background: 'linear-gradient(135deg, #92400e, #ca8a04)',
@@ -331,7 +331,7 @@ function App() {
               }}
             >▶ PLAY</button>
             <button
-              onClick={() => { handleFirstInteraction(); setAppScreen('tutorial'); }}
+              onClick={() => { handleFirstInteraction(); playButtonPress(); setAppScreen('tutorial'); }}
               style={{
                 width: '100%', padding: '16px 0', borderRadius: 12, cursor: 'pointer',
                 background: 'rgba(255,255,255,0.03)', border: '1px solid #3a2e1e',
