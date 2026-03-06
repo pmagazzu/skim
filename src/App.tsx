@@ -605,10 +605,33 @@ function App() {
                   />
                 </div>
 
-                {/* Strip 3: bounties condensed */}
+                {/* Strip 3: active bounties with clear goals */}
                 {state.activeBounties.length > 0 && (
-                  <div style={{ width: '100%', fontFamily: "'VT323',monospace", fontSize: 13, color: '#6b5a3e', textAlign: 'right' }}>
-                    🎯 {state.activeBounties.filter(b => !b.completed).length} active
+                  <div style={{ width: '100%', display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
+                    {state.activeBounties.map(b => (
+                      <div
+                        key={b.id}
+                        style={{
+                          minWidth: 170,
+                          maxWidth: 220,
+                          borderRadius: 8,
+                          border: `1px solid ${b.completed ? 'rgba(34,197,94,0.5)' : 'rgba(180,130,50,0.45)'}`,
+                          background: b.completed ? 'rgba(34,197,94,0.12)' : 'rgba(180,130,50,0.08)',
+                          padding: '5px 7px',
+                          opacity: b.completed ? 0.75 : 1,
+                        }}
+                      >
+                        <div style={{ fontFamily: "'VT323',monospace", fontSize: 15, color: b.completed ? '#4ade80' : '#fbbf24', lineHeight: 1 }}>
+                          {b.completed ? '✓' : '◎'} {b.title}
+                        </div>
+                        <div style={{ fontFamily: "'VT323',monospace", fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.2 }}>
+                          {b.description}
+                        </div>
+                        <div style={{ fontFamily: "'VT323',monospace", fontSize: 12, color: '#4ade80', lineHeight: 1 }}>
+                          🎁 {b.rewardLabel}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
 

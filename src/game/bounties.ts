@@ -39,7 +39,7 @@ export interface Bounty {
 export const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
   {
     title: 'High Roller',
-    description: 'Play a Flush or better this round.',
+    description: 'Goal: Play at least a Flush this round (any hand ≥ Flush counts).',
     condition: BountyCondition.PLAY_HAND_RANK,
     conditionValue: HandRank.FLUSH,
     reward: BountyReward.CHIPS,
@@ -49,7 +49,7 @@ export const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
   },
   {
     title: 'Full Send',
-    description: 'Play a Full House or better this round.',
+    description: 'Goal: Play at least a Full House this round.',
     condition: BountyCondition.PLAY_HAND_RANK,
     conditionValue: HandRank.FULL_HOUSE,
     reward: BountyReward.CHIPS,
@@ -59,7 +59,7 @@ export const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
   },
   {
     title: 'Royal Treatment',
-    description: 'Play a Four of a Kind or better.',
+    description: 'Goal: Play at least Four of a Kind this round.',
     condition: BountyCondition.PLAY_HAND_RANK,
     conditionValue: HandRank.FOUR_OF_A_KIND,
     reward: BountyReward.CHIPS,
@@ -69,7 +69,7 @@ export const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
   },
   {
     title: 'The Straight',
-    description: 'Play a Straight or better this round.',
+    description: 'Goal: Play at least a Straight this round.',
     condition: BountyCondition.PLAY_HAND_RANK,
     conditionValue: HandRank.STRAIGHT,
     reward: BountyReward.VAULT_REDUCE,
@@ -79,7 +79,7 @@ export const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
   },
   {
     title: 'Honest Work',
-    description: 'Keep your skim rate under 15% at round end.',
+    description: 'Goal: End round with vault filled and skim strictly under 15%.',
     condition: BountyCondition.KEEP_SKIM_UNDER,
     conditionValue: 15,
     reward: BountyReward.CHIPS,
@@ -89,7 +89,7 @@ export const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
   },
   {
     title: 'Efficient',
-    description: 'Fill the vault with 3 or more hands remaining.',
+    description: 'Goal: Fill vault with at least 3 hands left this round.',
     condition: BountyCondition.HANDS_REMAINING,
     conditionValue: 3,
     reward: BountyReward.EXTRA_HAND,
@@ -99,7 +99,7 @@ export const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
   },
   {
     title: 'Speed Run',
-    description: 'Fill the vault with 5 or more hands remaining.',
+    description: 'Goal: Fill vault with at least 5 hands left this round.',
     condition: BountyCondition.HANDS_REMAINING,
     conditionValue: 5,
     reward: BountyReward.CHIPS,
@@ -109,7 +109,7 @@ export const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
   },
   {
     title: 'Lucky Break',
-    description: 'Use a consumable this round.',
+    description: 'Goal: Use any consumable at least once this round.',
     condition: BountyCondition.USE_CONSUMABLE,
     conditionValue: 1,
     reward: BountyReward.CHIPS,
@@ -119,7 +119,7 @@ export const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
   },
   {
     title: 'Steady Hands',
-    description: "Don't discard any hands this round.",
+    description: 'Goal: Fill vault this round without discarding even once.',
     condition: BountyCondition.NO_DISCARD,
     conditionValue: 0,
     reward: BountyReward.VAULT_REDUCE,
@@ -129,7 +129,7 @@ export const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
   },
   {
     title: 'Big Hand',
-    description: 'Score 250 or more chips in a single hand.',
+    description: 'Goal: Score at least 250 chips in one hand this round.',
     condition: BountyCondition.SCORE_IN_ONE,
     conditionValue: 250,
     reward: BountyReward.SKIM_BOOST,
