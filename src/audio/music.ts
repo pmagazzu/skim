@@ -11,6 +11,7 @@ const TRACK_FILES: Record<MusicTrack, string> = {
 };
 
 const GAMEPLAY_VARIANTS = ['/music/gameplay-a.mp3', '/music/gameplay-b.mp3'] as const;
+const TENSION_VARIANTS  = ['/music/tension-a.mp3', '/music/tension-b.mp3'] as const;
 
 const DEFAULT_VOLUME = 0.35;
 const CROSSFADE_MS   = 1500;
@@ -26,6 +27,7 @@ let currentPath: string | null = null;
 let masterVolume  = DEFAULT_VOLUME;
 let muted         = false;
 let gameplayVariantIndex = 0;
+let tensionVariantIndex = 0;
 
 export function initMusic(): void {
   if (!audioCtx) {
@@ -84,6 +86,12 @@ class MusicManager {
         path = currentPath;
       } else {
         path = GAMEPLAY_VARIANTS[(gameplayVariantIndex++) % GAMEPLAY_VARIANTS.length];
+      }
+    } else if (track === 'tension') {
+      if (currentTrack === 'tension' && currentPath) {
+        path = currentPath;
+      } else {
+        path = TENSION_VARIANTS[(tensionVariantIndex++) % TENSION_VARIANTS.length];
       }
     } else {
       path = TRACK_FILES[track];
