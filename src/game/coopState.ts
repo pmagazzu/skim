@@ -31,6 +31,7 @@ export type CoopAction =
 // ── Initial state ─────────────────────────────────────────────────────────────
 export function makeInitialCoopState(roomCode: string, myPlayerIndex: 0 | 1): CoopGameState {
   const player0 = makeInitialPlayerState(0, 'p0');
+  const player1 = makeInitialPlayerState(1, 'p1');
   return {
     roomCode,
     myPlayerIndex,
@@ -49,10 +50,10 @@ export function makeInitialCoopState(roomCode: string, myPlayerIndex: 0 | 1): Co
     bounties: generateBounties(1) as Bounty[],
     shopItems: [],
     phase: 'lobby',
-    players: [player0, null],
+    players: [player0, player1],
     lastRoundWon: false,
     connected: true,
-    opponentConnected: false,
+    opponentConnected: true,
   };
 }
 

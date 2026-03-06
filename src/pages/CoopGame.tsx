@@ -33,9 +33,6 @@ export function CoopGame({ roomCode, playerIndex, onExit }: CoopGameProps) {
       if (msg.type === 'PLAYER_JOINED') {
         dispatch({ type: 'OPPONENT_JOINED' });
       }
-      if (msg.type === 'ALL_READY') {
-        dispatch({ type: 'DEAL', myPlayerIndex: playerIndex });
-      }
       if (msg.type === 'GAME_ACTION') {
         // Only apply if it came from the opponent
         if (msg.fromPlayerIndex !== playerIndex) {
@@ -53,6 +50,17 @@ export function CoopGame({ roomCode, playerIndex, onExit }: CoopGameProps) {
       }
     }, [playerIndex, isHost]),
   });
+
+  // Entering co-op means both players already readied in lobby.
+  // Host starts the first deal once this screen mounts.
+  useEffect(() => {
+    if (isHost) {
+      sendAction({ type: 'DEAL', myPlayerIndex: playerIndex });
+      dispatch({ type: 'DEAL', myPlayerIndex: playerIndex });
+    }
+    // run once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Host syncs state after every action
   useEffect(() => {

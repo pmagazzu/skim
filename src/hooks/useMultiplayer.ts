@@ -19,33 +19,89 @@ interface UseMultiplayerOptions {
   onMessage: (msg: ServerMsg) => void;
 }
 
+// Keep one socket alive across Lobby -> Coop transitions.
+let sharedSocket: WebSocket | null = null;
+const listeners = new Set<(msg: ServerMsg) => void>();
+const connListeners = new Set<(connected: boolean) => void>();
+const errListeners = new Set<(error: string | null) => void>();
+
+function emitConnected(next: boolean) {
+  for (const fn of connListeners) fn(next);
+}
+
+function emitError(next: string | null) {
+  for (const fn of errListeners) fn(next);
+}
+
+function ensureSocket() {
+  if (sharedSocket && (sharedSocket.readyState === WebSocket.OPEN || sharedSocket.readyState === WebSocket.CONNECTING)) {
+    return sharedSocket;
+  }
+
+  sharedSocket = new WebSocket(WS_URL);
+
+  sharedSocket.onopen = () => {
+    emitConnected(true);
+    emitError(null);
+  };
+
+  sharedSocket.onclose = () => {
+    emitConnected(false);
+  };
+
+  sharedSocket.onerror = () => {
+    emitError('Connection failed');
+    emitConnected(false);
+  };
+
+  sharedSocket.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data) as ServerMsg;
+      for (const listener of listeners) listener(msg);
+    } catch {
+      // ignore malformed payloads
+    }
+  };
+
+  return sharedSocket;
+}
+
 export function useMultiplayer({ onMessage }: UseMultiplayerOptions) {
-  const ws = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const onMessageRef = useRef(onMessage);
   onMessageRef.current = onMessage;
 
   useEffect(() => {
-    const socket = new WebSocket(WS_URL);
-    ws.current = socket;
+    ensureSocket();
 
-    socket.onopen = () => { setConnected(true); setError(null); };
-    socket.onclose = () => { setConnected(false); };
-    socket.onerror = () => { setError('Connection failed'); setConnected(false); };
-    socket.onmessage = (e) => {
-      try {
-        const msg = JSON.parse(e.data) as ServerMsg;
-        onMessageRef.current(msg);
-      } catch { /* ignore */ }
+    const msgHandler = (msg: ServerMsg) => onMessageRef.current(msg);
+    listeners.add(msgHandler);
+    connListeners.add(setConnected);
+    errListeners.add(setError);
+
+    const socket = sharedSocket;
+    if (socket?.readyState === WebSocket.OPEN) {
+      setConnected(true);
+      setError(null);
+    } else if (socket?.readyState === WebSocket.CONNECTING) {
+      setConnected(false);
+    } else {
+      setConnected(false);
+    }
+
+    return () => {
+      listeners.delete(msgHandler);
+      connListeners.delete(setConnected);
+      errListeners.delete(setError);
+      // Intentionally keep the socket alive between screens.
     };
-
-    return () => { socket.close(); };
   }, []);
 
   const send = useCallback((msg: object) => {
-    if (ws.current?.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify(msg));
+    const socket = ensureSocket();
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(msg));
     }
   }, []);
 
