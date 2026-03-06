@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { playChipBloop, playCardSelect, playCardDeselect, playCardDeal, playDiscard, playButtonPress, playHandPlay, playRoundWin, playRoundFail, playPurchase, playTimerWarn, playScoreImpact, playChipBloopScaled, playScoreSlamFinal, playVaultSeal } from './audio/sounds';
+import { playChipBloop, playCardSelect, playCardDeselect, playCardDeal, playDiscard, playButtonPress, playHandPlay, playRoundWin, playRoundFail, playBoosterPurchase, playTimerWarn, playScoreImpact, playChipBloopScaled, playScoreSlamFinal, playVaultSeal } from './audio/sounds';
 import { initMusic, musicManager } from './audio/music';
 import { useGameState } from './hooks/useGameState';
 import { Hand } from './components/Hand';
@@ -18,10 +18,10 @@ import DebugIndex from './pages/DebugIndex';
 import { Lobby } from './pages/Lobby';
 import { CoopGame } from './pages/CoopGame';
 import { PackOpenModal } from './components/PackOpenModal';
+import { BoosterOpenModal } from './components/BoosterOpenModal';
 import { ForgeResultModal } from './components/ForgeResultModal';
 import { Tutorial } from './components/Tutorial';
 import { DeckViewer } from './components/DeckViewer';
-import { UpgradeType } from './game/gameState';
 
 type SortMode = 'dealt' | 'high' | 'low' | 'suit';
 
@@ -755,27 +755,9 @@ function App() {
           <Shop
             items={state.shopItems}
             personalChips={state.personalChips}
-            consumableCount={state.consumables.length}
-            chipCount={state.chipStack.length}
-            maxChips={state.purchasedUpgrades.includes(UpgradeType.EXTRA_CHIP_SLOT) ? 6 : 5}
-            deckSize={state.deck.length}
-            lowCardCount={state.deck.filter(c => c.rank <= 8).length}
-            availableBounties={state.availableBounties}
-            chipStack={state.chipStack}
-            purchasedUpgrades={state.purchasedUpgrades}
-            shopDiscount={state.shopDiscount}
-            onBuy={id => { playPurchase(); dispatch({ type: 'BUY_ITEM', itemId: id }); }}
-            onAcceptBounty={id => dispatch({ type: 'ACCEPT_BOUNTY', bountyId: id })}
-            handLevels={state.handLevels}
-            shopHandUpgrades={state.shopHandUpgrades}
-            handRerollCost={state.handRerollCost}
-            onSellChip={index => dispatch({ type: 'SELL_CHIP', index })}
-            onBuyUpgrade={t => { playPurchase(); dispatch({ type: 'BUY_UPGRADE', upgradeType: t }); }}
-            onBuyHandUpgrade={rank => { playPurchase(); dispatch({ type: 'BUY_HAND_UPGRADE', handRank: rank }); }}
-            onRerollHandUpgrades={() => dispatch({ type: 'REROLL_HAND_UPGRADES' })}
-            onBuyForge={rarity => { playPurchase(); dispatch({ type: 'BUY_FORGE', rarity }); }}
-            currentTheme={state.theme}
-            onSetTheme={theme => dispatch({ type: 'SET_THEME', theme })}
+            onBuy={id => { playBoosterPurchase(); dispatch({ type: 'BUY_BOOSTER', itemId: id }); }}
+            onRerollBoosters={() => dispatch({ type: 'REROLL_BOOSTERS' })}
+            boosterRerollCost={state.boosterRerollCost}
             onViewDeck={() => setShowDeckViewer(true)}
             onEndShop={() => dispatch({ type: 'END_SHOP' })}
           />
@@ -869,6 +851,14 @@ function App() {
           card={state.forgeResult.card}
           modifier={state.forgeResult.modifier}
           onDismiss={() => dispatch({ type: 'DISMISS_RESULT' })}
+        />
+      )}
+      {state.openedBooster && (
+        <BoosterOpenModal
+          booster={state.shopItems.find(i => i.id === state.openedBooster?.boosterId) ?? { id: '', label: 'Booster', subtitle: '', cost: 0, type: 'booster', boosterType: 'WILDCARD', rarity: 'common', optionCount: 2 }}
+          options={state.openedBooster.options}
+          onPick={optionId => dispatch({ type: 'SELECT_BOOSTER_OPTION', boosterId: state.openedBooster!.boosterId, optionId })}
+          onDismiss={() => dispatch({ type: 'DISMISS_BOOSTER' })}
         />
       )}
       {state.pendingPackResult && (

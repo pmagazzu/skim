@@ -1,6 +1,6 @@
 import { createDeck, shuffle, rankName, suitSymbol, CardModifier } from './deck';
 import type { Card, CardModifierValue } from './deck';
-import { evaluateHand } from './hands';
+import { evaluateHand, HAND_NAMES } from './hands';
 import { chipValue, handUpgradeCost, SCORE_TABLE, handBaseAtLevel, resolveModifiers } from './scoring';
 import type { HandRankValue } from './hands';
 import { ConsumableType, rollScratchMultiplier } from './consumables';
@@ -86,16 +86,41 @@ export interface PendingPackResult {
   upgrades?: PackUpgradeEntry[];      // for UPGRADE packs
 }
 
+export const BoosterType = {
+  CHIP: 'CHIP',
+  HAND: 'HAND',
+  UTILITY: 'UTILITY',
+  FORGE: 'FORGE',
+  WILDCARD: 'WILDCARD',
+  BOUNTY: 'BOUNTY',
+} as const;
+export type BoosterTypeValue = typeof BoosterType[keyof typeof BoosterType];
+
+export type BoosterRarity = 'common' | 'uncommon' | 'rare' | 'legendary';
+
+export interface BoosterOption {
+  id: string;
+  label: string;
+  detail: string;
+  kind: 'chip' | 'hand-upgrade' | 'consumable' | 'skim-upgrade' | 'forge' | 'bounty' | 'chips';
+  chipType?: ChipTypeValue;
+  handRank?: HandRankValue;
+  consumableType?: ConsumableTypeValue;
+  forgeRarity?: BoosterRarity;
+  bountyId?: string;
+  chipsAmount?: number;
+}
+
 export interface ShopItem {
   id: string;
   label: string;
-  description: string;
+  subtitle: string;
   cost: number;
-  type: 'consumable' | 'skim-upgrade' | 'chip' | 'pack';
-  consumableType?: ConsumableTypeValue;
-  chipType?: ChipTypeValue;
-  packType?: PackTypeValue;
-  rarity?: string;
+  type: 'booster';
+  boosterType: BoosterTypeValue;
+  rarity: BoosterRarity;
+  optionCount: number;
+  premium?: boolean;
 }
 
 export const UpgradeType = {
@@ -214,6 +239,8 @@ export interface GameState {
   handLevels: Record<HandRankValue, number>;   // upgrade level per hand rank (1 = base)
   shopHandUpgrades: HandRankValue[];           // 2 random hands offered for upgrade this shop visit
   handRerollCost: number;                      // current reroll cost (escalates per reroll)
+  openedBooster: { boosterId: string; options: BoosterOption[] } | null;
+  boosterRerollCost: number;
 }
 
 export type GameAction =
@@ -230,6 +257,10 @@ export type GameAction =
   | { type: 'ROULETTE_BET'; amount: number }
   | { type: 'DISMISS_RESULT' }
   | { type: 'BUY_ITEM'; itemId: string }
+  | { type: 'BUY_BOOSTER'; itemId: string }
+  | { type: 'SELECT_BOOSTER_OPTION'; boosterId: string; optionId: string }
+  | { type: 'DISMISS_BOOSTER' }
+  | { type: 'REROLL_BOOSTERS' }
   | { type: 'BUY_PACK'; packType: PackTypeValue }
   | { type: 'CONFIRM_PACK' }
   | { type: 'SELL_CHIP'; index: number }
@@ -467,166 +498,147 @@ function pickHandUpgrades(): HandRankValue[] {
 }
 const COMMUNITY_COUNT = 3;
 
-function generateShop(_held: ConsumableTypeValue[], chipStack: ChipTypeValue[], _round = 1, ante = 1, shopDiscount = 0, upgrades: UpgradeTypeValue[] = []): ShopItem[] {
-  const items: ShopItem[] = [];
 
-  // 2 random consumables
-  const allC = Object.values(ConsumableType);
-  const shuffledC = [...allC].sort(() => Math.random() - 0.5).slice(0, 2);
-  for (const ct of shuffledC) {
-    const names: Record<ConsumableTypeValue, string> = {
-      SCRATCH_TICKET: 'Scratch Ticket',
-      HIGH_CARD_DRAW: 'High Card Draw',
-      ROULETTE: 'Roulette',
-      BURNED_HAND: 'Burned Hand',
-    };
-    const descs: Record<ConsumableTypeValue, string> = {
-      SCRATCH_TICKET: 'x1–x5 multiplier on next hand',
-      HIGH_CARD_DRAW: 'Draw 2 extra cards',
-      ROULETTE: 'Bet up to 50 chips — double or nothing',
-      BURNED_HAND: 'Sacrifice 1 hand → next scores ×3',
-    };
-    items.push({
-      id: `shop-c-${ct}-${Date.now()}-${Math.random()}`,
-      label: names[ct],
-      description: descs[ct],
-      cost: 30,
-      type: 'consumable',
-      consumableType: ct,
-    });
+function weightedPick<T extends string>(entries: { key: T; weight: number }[]): T {
+  const valid = entries.filter(e => e.weight > 0);
+  const total = valid.reduce((sum, e) => sum + e.weight, 0);
+  let r = Math.random() * total;
+  for (const entry of valid) {
+    r -= entry.weight;
+    if (r <= 0) return entry.key;
   }
+  return valid[0].key;
+}
 
-  // Rarity-weighted chip offers (3 chips)
-  const allChips = Object.values(ChipType);
-  // chips can repeat — always pull from full pool
-  // Ante 1: commons only. Ante 2: commons + uncommons. Ante 3+: full pool
-  const rarityWeight: Record<string, number> = {
-    common:    ante === 1 ? 6    : ante === 2 ? 4   : 3,
-    uncommon:  ante === 1 ? 0    : ante === 2 ? 3   : 2.5,
-    rare:      ante === 1 ? 0    : ante === 2 ? 0   : 1.2,
-    legendary: ante === 1 ? 0    : ante === 2 ? 0   : 0.4,
+function boosterRarityFor(ante: number, isPremiumBias = false): BoosterRarity {
+  return weightedPick<BoosterRarity>([
+    { key: 'common', weight: ante <= 1 ? 64 : ante === 2 ? 40 : 24 },
+    { key: 'uncommon', weight: ante <= 1 ? 30 : ante === 2 ? 36 : 34 },
+    { key: 'rare', weight: ante <= 1 ? 6 : ante === 2 ? 20 : 30 },
+    { key: 'legendary', weight: isPremiumBias ? (ante <= 2 ? 6 : 14) : (ante <= 1 ? 0 : ante === 2 ? 4 : 12) },
+  ]);
+}
+
+function countLowCards(deck: Card[]): number { return deck.filter(c => c.rank <= 8).length; }
+
+function generateBoosterOptions(state: GameState, item: ShopItem): BoosterOption[] {
+  const maxChips = state.purchasedUpgrades.includes(UpgradeType.EXTRA_CHIP_SLOT) ? 6 : MAX_CHIPS;
+  const rarityOrder: BoosterRarity[] = ['common', 'uncommon', 'rare', 'legendary'];
+  const forgeFallback = rarityOrder[Math.max(0, rarityOrder.indexOf(item.rarity))];
+
+  const randomChipByRarity = (rarity: BoosterRarity): ChipTypeValue => {
+    const pool = (Object.values(ChipType) as ChipTypeValue[]).filter(ch => CHIPS[ch].rarity === rarity);
+    const full = Object.values(ChipType) as ChipTypeValue[];
+    const source = pool.length > 0 ? pool : full;
+    return source[Math.floor(Math.random() * source.length)];
   };
-  const weightedPool = allChips.map(ch => ({ ch, weight: rarityWeight[CHIPS[ch].rarity] ?? 1 }));
-  const pickedChips: ChipTypeValue[] = [];
-  for (let i = 0; i < 3 && weightedPool.length > 0; i++) {
-    const totalW = weightedPool.reduce((s, x) => s + x.weight, 0);
-    let r = Math.random() * totalW;
-    const idx = Math.max(0, weightedPool.findIndex(x => { r -= x.weight; return r <= 0; }));
-    const pick = weightedPool.splice(idx, 1)[0];
-    pickedChips.push(pick.ch);
-  }
-  for (const ch of pickedChips) {
-    const chip = CHIPS[ch];
-    items.push({ id: `shop-ch-${ch}-${Date.now()}-${Math.random()}`, label: chip.name, description: chip.description, cost: chip.cost, type: 'chip', chipType: ch, rarity: chip.rarity });
+
+  const randomHand = (): HandRankValue => weightedPick<HandRankValue>([
+    { key: 1, weight: 20 }, { key: 2, weight: 17 }, { key: 3, weight: 15 }, { key: 4, weight: 12 },
+    { key: 5, weight: 10 }, { key: 6, weight: 8 }, { key: 7, weight: 6 }, { key: 8, weight: 4 }, { key: 9, weight: 2 }, { key: 10, weight: 1 },
+  ]);
+
+  const cVals = Object.values(ConsumableType) as ConsumableTypeValue[];
+  const utilityChoice = (): BoosterOption => {
+    if (Math.random() < 0.55) {
+      const c = cVals[Math.floor(Math.random() * cVals.length)];
+      return { id: `opt-c-${c}-${Math.random()}`, kind: 'consumable', consumableType: c, label: `+ ${c.replaceAll('_', ' ')}`, detail: 'Consumable' };
+    }
+    return { id: `opt-skim-${Math.random()}`, kind: 'skim-upgrade', label: 'Skim Rate +5%', detail: 'Permanent' };
+  };
+
+  const options: BoosterOption[] = [];
+  const add = (o: BoosterOption) => { if (options.length < item.optionCount) options.push(o); };
+
+  const pushChip = () => {
+    if (state.chipStack.length >= maxChips) add({ id: `opt-cash-${Math.random()}`, kind: 'chips', chipsAmount: 45, label: '+45 chips', detail: 'Stack full fallback' });
+    else {
+      const chip = randomChipByRarity(item.rarity);
+      add({ id: `opt-chip-${chip}-${Math.random()}`, kind: 'chip', chipType: chip, label: CHIPS[chip].name, detail: CHIPS[chip].description });
+    }
+  };
+
+  const pushHand = () => {
+    const hr = randomHand();
+    add({ id: `opt-hand-${hr}-${Math.random()}`, kind: 'hand-upgrade', handRank: hr, label: `${HAND_NAMES[hr]} +1`, detail: 'Upgrade hand rank' });
+  };
+
+  const pushForge = () => {
+    add({ id: `opt-forge-${Math.random()}`, kind: 'forge', forgeRarity: forgeFallback, label: `${forgeFallback.toUpperCase()} Forge`, detail: 'Random card modifier' });
+  };
+
+  const pushBounty = () => {
+    const open = state.availableBounties.filter(b => !b.accepted);
+    if (open.length === 0) add({ id: `opt-cash-${Math.random()}`, kind: 'chips', chipsAmount: 65, label: '+65 chips', detail: 'No bounties available' });
+    else {
+      const b = open[Math.floor(Math.random() * open.length)];
+      add({ id: `opt-bounty-${b.id}`, kind: 'bounty', bountyId: b.id, label: b.title, detail: b.rewardLabel });
+    }
+  };
+
+  if (item.boosterType === BoosterType.CHIP) while (options.length < item.optionCount) pushChip();
+  if (item.boosterType === BoosterType.HAND) while (options.length < item.optionCount) pushHand();
+  if (item.boosterType === BoosterType.UTILITY) while (options.length < item.optionCount) add(utilityChoice());
+  if (item.boosterType === BoosterType.FORGE) while (options.length < item.optionCount) pushForge();
+  if (item.boosterType === BoosterType.BOUNTY) while (options.length < item.optionCount) pushBounty();
+  if (item.boosterType === BoosterType.WILDCARD) {
+    const builders = [pushChip, pushHand, () => add(utilityChoice()), pushForge, pushBounty];
+    while (options.length < item.optionCount) builders[Math.floor(Math.random() * builders.length)]();
   }
 
-  // Skim upgrade
-  items.push({
-    id: `shop-skim-${Date.now()}`,
-    label: 'Skim Rate +5%',
-    description: 'Take a bigger personal cut from each hand',
-    cost: 50,
-    type: 'skim-upgrade',
-  });
+  // dead-offer protection
+  if (options.every(o => o.kind === 'chips')) options[0] = { id: `opt-skim-safe-${Math.random()}`, kind: 'skim-upgrade', label: 'Skim Rate +5%', detail: 'Safety offer' };
 
-  // Booster packs — 3 packs per shop, rarity-weighted by ante
-  const ALL_PACK_DEFS: { type: PackTypeValue; label: string; description: string; cost: number; rarity: PackRarity }[] = [
-    // Common
-    { type: PackType.JUNK_PACK,     rarity: 'common',    label: '🗑️ Bargain Bin',    description: '2 random low cards (2–6). Filler, but cheap.',                          cost: 15  },
-    { type: PackType.BULK_PACK,     rarity: 'common',    label: '📦 Bulk Deal',       description: '3 mid-range cards (5–9). Decent deck padding.',                         cost: 28  },
-    // Uncommon
-    { type: PackType.STANDARD_PACK, rarity: 'uncommon',  label: '📦 Standard Pack',  description: '3 cards — 7s through Kings, rare Ace.',                                 cost: 40  },
-    { type: PackType.SUITED_PACK,   rarity: 'uncommon',  label: '♠️ Suited Stack',    description: '3 cards all the same suit. Great for flush builds.',                    cost: 50  },
-    { type: PackType.FACE_UPGRADE,  rarity: 'uncommon',  label: '⬆ Face Upgrade',    description: 'Upgrades 3 of your lowest cards to J, Q, or K.',                        cost: 60  },
-    // Rare
-    { type: PackType.PREMIUM_PACK,  rarity: 'rare',      label: '✨ Premium Pack',   description: '4 high-value cards — face cards & Aces weighted.',                       cost: 75  },
-    { type: PackType.FLUSH_PACK,    rarity: 'rare',      label: '🌊 Flush Finder',   description: '5 cards same suit (5 through Ace). Instant flush fodder.',               cost: 88  },
-    { type: PackType.PAIR_UPGRADE,  rarity: 'rare',      label: '👯 Pair Up',         description: 'Reshapes 4 low cards into 2 matching pairs in your deck.',               cost: 72  },
-    // Legendary
-    { type: PackType.ROYAL_UPGRADE, rarity: 'legendary', label: '👑 Royal Upgrade',  description: 'Upgrades 5 of your lowest cards to Aces and face cards.',                cost: 110 },
-    { type: PackType.ACE_PACK,      rarity: 'legendary', label: '🎰 High Roller',    description: 'Adds 3 Aces directly to your deck.',                                    cost: 140 },
-    { type: PackType.GODHAND_PACK,  rarity: 'legendary', label: '✨ God Hand',        description: 'Adds A K Q J 10 same suit — a royal flush waiting to happen.',          cost: 175 },
+  return options.slice(0, item.optionCount);
+}
+
+function generateShop(_held: ConsumableTypeValue[], chipStack: ChipTypeValue[], _round = 1, ante = 1, shopDiscount = 0, _upgrades: UpgradeTypeValue[] = [], state?: GameState): ShopItem[] {
+  const baseState = state;
+  const lowCards = baseState ? countLowCards(baseState.ownedDeck) : 18;
+  const emptyConsumableSlots = baseState ? Math.max(0, baseState.consumableSlots - baseState.consumables.length) : 1;
+
+  const synergy: Record<BoosterTypeValue, number> = {
+    CHIP: chipStack.length <= 1 ? 1.25 : chipStack.length <= 3 ? 1.1 : 0.8,
+    HAND: lowCards > 18 ? 1.2 : 1,
+    UTILITY: emptyConsumableSlots >= 1 ? 1.3 : 0.8,
+    FORGE: ante >= 2 ? 1.1 : 0.75,
+    WILDCARD: 1,
+    BOUNTY: ante >= 2 ? 0.7 : 0.3,
+  };
+
+  const def: Array<{ boosterType: BoosterTypeValue; label: string; subtitle: string; baseCost: number }> = [
+    { boosterType: BoosterType.CHIP, label: 'Chip Booster', subtitle: 'Pick 1 of 3 chips', baseCost: 34 },
+    { boosterType: BoosterType.HAND, label: 'Hand Booster', subtitle: 'Pick 1 of 2 upgrades', baseCost: 42 },
+    { boosterType: BoosterType.UTILITY, label: 'Utility Booster', subtitle: 'Pick 1 of 2 utility', baseCost: 38 },
+    { boosterType: BoosterType.FORGE, label: 'Forge Booster', subtitle: 'Pick 1 forge path', baseCost: 56 },
+    { boosterType: BoosterType.WILDCARD, label: 'Wildcard Booster', subtitle: 'Pick 1 mixed reward', baseCost: 52 },
+    { boosterType: BoosterType.BOUNTY, label: 'Bounty Booster', subtitle: 'Pick 1 contract', baseCost: 35 },
   ];
 
-  // Weight pools by ante (matches chip rarity logic)
-  const packRarityWeights: Record<PackRarity, number> = ante === 1
-    ? { common: 65, uncommon: 35, rare: 0,  legendary: 0  }
-    : ante === 2
-    ? { common: 40, uncommon: 40, rare: 18, legendary: 2  }
-    : { common: 25, uncommon: 35, rare: 30, legendary: 10 };
-
-  function rollPackRarity(): PackRarity {
-    const r = Math.random() * 100;
-    const w = packRarityWeights;
-    if (r < w.common) return 'common';
-    if (r < w.common + w.uncommon) return 'uncommon';
-    if (r < w.common + w.uncommon + w.rare) return 'rare';
-    return 'legendary';
-  }
-
-  const chosenPackTypes = new Set<PackTypeValue>();
-  const chosenPacks: typeof ALL_PACK_DEFS = [];
-  let attempts = 0;
-  while (chosenPacks.length < 3 && attempts < 30) {
-    attempts++;
-    const rarity = rollPackRarity();
-    const pool = ALL_PACK_DEFS.filter(p => p.rarity === rarity && !chosenPackTypes.has(p.type));
-    if (pool.length === 0) continue;
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    chosenPackTypes.add(pick.type);
-    chosenPacks.push(pick);
-  }
-
-  for (const p of chosenPacks) {
-    items.push({
-      id: `shop-pack-${p.type}-${Date.now()}-${Math.random()}`,
-      label: p.label,
-      description: p.description,
-      cost: p.cost,
-      type: 'pack',
-      packType: p.type,
-      rarity: p.rarity,
+  const chosen: ShopItem[] = [];
+  const types = new Set<BoosterTypeValue>();
+  while (chosen.length < 5) {
+    const pick = weightedPick(def.map(d => ({ key: d.boosterType, weight: (synergy[d.boosterType] ?? 1) * (types.has(d.boosterType) ? 0.35 : 1) })));
+    const d = def.find(x => x.boosterType === pick)!;
+    const rarity = boosterRarityFor(ante, pick === BoosterType.WILDCARD || pick === BoosterType.FORGE);
+    const premium = rarity === 'legendary';
+    const rarityMult: Record<BoosterRarity, number> = { common: 1, uncommon: 1.22, rare: 1.58, legendary: 2.05 };
+    const cost = Math.max(8, Math.floor(d.baseCost * rarityMult[rarity] * (1 - shopDiscount)));
+    const optionCount = pick === BoosterType.CHIP ? (premium ? 4 : 3) : 2;
+    chosen.push({
+      id: `shop-booster-${pick}-${Date.now()}-${Math.random()}`,
+      label: premium ? `Premium ${d.label}` : d.label,
+      subtitle: d.subtitle,
+      cost,
+      type: 'booster',
+      boosterType: pick,
+      rarity,
+      optionCount,
+      premium,
     });
+    types.add(pick);
   }
-
-  // Helper: roll a chip rarity weighted by ante
-  function rollRarity(a: number): string {
-    const weights = [
-      { r: 'common',    w: a === 1 ? 6 : a === 2 ? 4 : 3 },
-      { r: 'uncommon',  w: a === 1 ? 0 : a === 2 ? 3 : 2.5 },
-      { r: 'rare',      w: a === 1 ? 0 : a === 2 ? 0 : 1.2 },
-      { r: 'legendary', w: a === 1 ? 0 : a === 2 ? 0 : 0.4 },
-    ].filter(x => x.w > 0);
-    const total = weights.reduce((s, x) => s + x.w, 0);
-    let rand = Math.random() * total;
-    for (const { r, w } of weights) { rand -= w; if (rand <= 0) return r; }
-    return 'common';
-  }
-
-  // LUCKY_SHOP: add one extra rarity-weighted chip
-  if (upgrades.includes(UpgradeType.LUCKY_SHOP)) {
-    const extraRarity = rollRarity(ante);
-    const pool = allChips.filter(ch => CHIPS[ch].rarity === extraRarity);
-    if (pool.length > 0) {
-      const ch = pool[Math.floor(Math.random() * pool.length)];
-      const chip = CHIPS[ch];
-      items.push({
-        id: `shop-lucky-${ch}-${Date.now()}`,
-        label: `🍀 ${chip.name}`,
-        description: chip.description,
-        cost: chip.cost,
-        type: 'chip',
-        chipType: ch,
-        rarity: chip.rarity,
-      });
-    }
-  }
-
-  // Apply shop discount to all items
-  if (shopDiscount > 0) {
-    return items.map(item => ({ ...item, cost: Math.max(1, Math.floor(item.cost * (1 - shopDiscount))) }));
-  }
-  return items;
+  return chosen;
 }
 
 export const initialState: GameState = {
@@ -682,6 +694,8 @@ export const initialState: GameState = {
   handLevels: { 1:1, 2:1, 3:1, 4:1, 5:1, 6:1, 7:1, 8:1, 9:1, 10:1 },
   shopHandUpgrades: [],
   handRerollCost: 10,
+  openedBooster: null,
+  boosterRerollCost: 20,
 };
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -981,7 +995,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         chipStack: newStack,
         personalChips: state.personalChips + refund,
-        shopItems: generateShop(state.consumables, newStack, state.round, state.ante, state.shopDiscount, state.purchasedUpgrades),
+        shopItems: generateShop(state.consumables, newStack, state.round, state.ante, state.shopDiscount, state.purchasedUpgrades, state),
       };
     }
 
@@ -1021,7 +1035,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         consumableSlots: newConsumableSlots,
         shopDiscount: newDiscount,
         feltSkin: newFelt,
-        shopItems: generateShop(state.consumables, state.chipStack, state.round, state.ante, newDiscount, newUpgrades),
+        shopItems: generateShop(state.consumables, state.chipStack, state.round, state.ante, newDiscount, newUpgrades, state),
       };
     }
 
@@ -1141,27 +1155,82 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'DISMISS_RESULT':
       return { ...state, consumableResult: null, forgeResult: null };
 
-    case 'BUY_ITEM': {
-      const item = state.shopItems.find(i => i.id === action.itemId);
-      if (!item || state.personalChips < item.cost) return state;
-      const newPersonal = state.personalChips - item.cost;
-      const newShop = state.shopItems.filter(i => i.id !== action.itemId);
+    case 'BUY_ITEM':
+    case 'BUY_BOOSTER': {
+      const itemId = action.type === 'BUY_ITEM' ? action.itemId : action.itemId;
+      const item = state.shopItems.find(i => i.id === itemId);
+      if (!item || state.personalChips < item.cost || state.openedBooster) return state;
+      const options = generateBoosterOptions(state, item);
+      return {
+        ...state,
+        personalChips: state.personalChips - item.cost,
+        openedBooster: { boosterId: item.id, options },
+      };
+    }
 
-      if (item.type === 'skim-upgrade') {
-        return { ...state, personalChips: newPersonal, shopItems: newShop, skimRate: Math.min(0.40, state.skimRate + 0.05) };
-      }
-      if (item.type === 'consumable' && item.consumableType && state.consumables.length < MAX_CONSUMABLES) {
-        return { ...state, personalChips: newPersonal, shopItems: newShop, consumables: [...state.consumables, item.consumableType] };
-      }
+    case 'DISMISS_BOOSTER':
+      return { ...state, openedBooster: null };
+
+    case 'SELECT_BOOSTER_OPTION': {
+      if (!state.openedBooster || state.openedBooster.boosterId !== action.boosterId) return state;
+      const pick = state.openedBooster.options.find(o => o.id === action.optionId);
+      if (!pick) return state;
+      let next = { ...state, openedBooster: null, shopItems: state.shopItems.map(i => i.id === action.boosterId ? { ...i, cost: 0, subtitle: 'Sold' } : i) };
       const maxChips = state.purchasedUpgrades.includes(UpgradeType.EXTRA_CHIP_SLOT) ? 6 : MAX_CHIPS;
-      if (item.type === 'chip' && item.chipType && state.chipStack.length < maxChips) {
-        return { ...state, personalChips: newPersonal, shopItems: newShop, chipStack: [...state.chipStack, item.chipType] };
+
+      if (pick.kind === 'chip' && pick.chipType) {
+        if (next.chipStack.length < maxChips) next = { ...next, chipStack: [...next.chipStack, pick.chipType] };
+        else next = { ...next, personalChips: next.personalChips + 45 };
       }
-      if (item.type === 'pack' && item.packType) {
-        const result = computePackResult(state.deck, item.packType);
-        return { ...state, personalChips: newPersonal, shopItems: newShop, pendingPackResult: result };
+      if (pick.kind === 'hand-upgrade' && pick.handRank) {
+        const lv = next.handLevels[pick.handRank] ?? 1;
+        next = { ...next, handLevels: { ...next.handLevels, [pick.handRank]: lv + 1 } };
       }
-      return state;
+      if (pick.kind === 'consumable' && pick.consumableType) {
+        if (next.consumables.length < next.consumableSlots) next = { ...next, consumables: [...next.consumables, pick.consumableType] };
+        else next = { ...next, personalChips: next.personalChips + 25 };
+      }
+      if (pick.kind === 'skim-upgrade') next = { ...next, skimRate: Math.min(0.40, next.skimRate + 0.05) };
+      if (pick.kind === 'chips') next = { ...next, personalChips: next.personalChips + (pick.chipsAmount ?? 30) };
+      if (pick.kind === 'bounty' && pick.bountyId) {
+        next = {
+          ...next,
+          availableBounties: next.availableBounties.map(b => b.id === pick.bountyId ? { ...b, accepted: true } : b),
+        };
+      }
+      if (pick.kind === 'forge') {
+        const rarity = pick.forgeRarity ?? 'common';
+        const rarityPool: Record<string, CardModifierValue[]> = {
+          common: ['POLISHED', 'SCARRED'],
+          uncommon: ['CHARGED', 'HOT', 'WILD'],
+          rare: ['VOLATILE', 'GHOST'],
+          legendary: ['CURSED', 'MIMIC'],
+        };
+        const pool = rarityPool[rarity];
+        const modifier = pool[Math.floor(Math.random() * pool.length)];
+        const eligible = next.ownedDeck.filter(c => !c.modifier);
+        if (eligible.length > 0) {
+          const target = eligible[Math.floor(Math.random() * eligible.length)];
+          next = {
+            ...next,
+            ownedDeck: next.ownedDeck.map(c => c.id === target.id ? { ...c, modifier } : c),
+            deck: next.deck.map(c => c.id === target.id ? { ...c, modifier } : c),
+            hand: next.hand.map(c => c.id === target.id ? { ...c, modifier } : c),
+            forgeResult: { card: { ...target, modifier }, modifier },
+          };
+        }
+      }
+      return next;
+    }
+
+    case 'REROLL_BOOSTERS': {
+      if (state.personalChips < state.boosterRerollCost || state.openedBooster) return state;
+      return {
+        ...state,
+        personalChips: state.personalChips - state.boosterRerollCost,
+        boosterRerollCost: Math.ceil(state.boosterRerollCost * 1.7),
+        shopItems: generateShop(state.consumables, state.chipStack, state.round, state.ante, state.shopDiscount, state.purchasedUpgrades, state),
+      };
     }
 
     case 'BUY_FORGE': {
@@ -1198,8 +1267,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'BUY_PACK': {
-      const packItem = state.shopItems.find(i => i.packType === action.packType);
-      const cost = packItem?.cost ?? 60;
+      const cost = 60;
       if (state.personalChips < cost) return state;
       const result = computePackResult(state.deck, action.packType);
       return { ...state, personalChips: state.personalChips - cost, pendingPackResult: result };
@@ -1274,9 +1342,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         phase: 'shop',
-        shopItems: generateShop(state.consumables, state.chipStack, state.round, state.ante, state.shopDiscount, state.purchasedUpgrades),
+        shopItems: generateShop(state.consumables, state.chipStack, state.round, state.ante, state.shopDiscount, state.purchasedUpgrades, state),
         shopHandUpgrades: pickHandUpgrades(),
         handRerollCost: 10,
+        openedBooster: null,
+        boosterRerollCost: 20,
         roundHistory: [...state.roundHistory, result],
         activeBounties: resolvedBounties,
         availableBounties: newBounties,

@@ -370,6 +370,19 @@ export function playPurchase() {
   setTimeout(() => playBloop(990, 0.12, 'sine', 0.35), 130);
 }
 
+export function playBoosterPurchase() {
+  playPurchase();
+}
+
+export function playBoosterOpen() {
+  playPackOpen();
+}
+
+export function playBoosterPick() {
+  playBloop(720, 0.08, 'square', 0.55);
+  setTimeout(() => playBloop(980, 0.1, 'sine', 0.4), 55);
+}
+
 /** Score number ticking up */
 export function playScoreTick() {
   playBloop(440 + Math.random() * 80, 0.025, 'square', 0.25);
