@@ -8,6 +8,7 @@ import { ChipArt } from './ChipArt';
 import { HAND_NAMES } from '../game/hands';
 import type { HandRankValue } from '../game/hands';
 import { SCORE_TABLE, handUpgradeCost, handBaseAtLevel } from '../game/scoring';
+import { playTabSwitch } from '../audio/sounds';
 
 type ShopTab = 'chips' | 'casino' | 'deck' | 'bounties' | 'upgrades' | 'hands' | 'forge';
 
@@ -188,7 +189,7 @@ function HandUpgradeCard({ rank, level, canBuy, discount, onBuy }: {
 
 function TabButton({ label, active, onClick, badge }: { label: string; active: boolean; onClick: () => void; badge?: number }) {
   return (
-    <button onClick={onClick} style={{ whiteSpace: 'nowrap', flexShrink: 0, fontSize: 11, padding: '8px 12px', minHeight: 40 }} className={['relative rounded transition-all', active ? 'btn-primary' : 'btn-secondary'].join(' ')}>
+    <button onClick={() => { playTabSwitch(); onClick(); }} style={{ whiteSpace: 'nowrap', flexShrink: 0, fontSize: 11, padding: '8px 12px', minHeight: 40 }} className={['relative rounded transition-all', active ? 'btn-primary' : 'btn-secondary'].join(' ')}>
       {label}
       {badge !== undefined && badge > 0 && (
         <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-amber-500 text-black text-sm flex items-center justify-center font-bold" style={{ fontSize: 9 }}>{badge}</span>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Card } from '../game/deck';
+import { playForgeHit, playForgeReveal } from '../audio/sounds';
 import { rankName, suitSymbol, isRed, MODIFIER_LABEL, MODIFIER_DESC } from '../game/deck';
 import type { CardModifierValue } from '../game/deck';
 
@@ -22,8 +23,14 @@ export function ForgeResultModal({ card, modifier, onDismiss }: ForgeResultModal
 
   useEffect(() => {
     // Sequence: show card → flash forge → reveal with glow
-    const t1 = setTimeout(() => setPhase('forge-flash'), 700);
-    const t2 = setTimeout(() => setPhase('reveal'), 1300);
+    const t1 = setTimeout(() => {
+      playForgeHit();
+      setPhase('forge-flash');
+    }, 700);
+    const t2 = setTimeout(() => {
+      playForgeReveal();
+      setPhase('reveal');
+    }, 1300);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 

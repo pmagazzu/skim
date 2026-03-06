@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { PendingPackResult } from '../game/gameState';
+import { playPackOpen, playPurchase } from '../audio/sounds';
 import { rankName, suitSymbol } from '../game/deck';
 import type { Card } from '../game/deck';
 
@@ -162,7 +163,10 @@ export function PackOpenModal({ result, onConfirm }: PackOpenModalProps) {
   useEffect(() => {
     if (result.kind === 'upgrade') {
       // Auto-open upgrades after a short pause
-      const t = setTimeout(() => setOpened(true), 300);
+      const t = setTimeout(() => {
+        playPackOpen();
+        setOpened(true);
+      }, 300);
       return () => clearTimeout(t);
     }
   }, [result.kind]);
@@ -206,7 +210,7 @@ export function PackOpenModal({ result, onConfirm }: PackOpenModalProps) {
           <>
             {!opened ? (
               <div
-                onClick={() => setOpened(true)}
+                onClick={() => { playPackOpen(); setOpened(true); }}
                 style={{
                   width: 90, height: 126, borderRadius: 10,
                   background: `linear-gradient(135deg, ${color}33, #1a1a2e)`,
@@ -250,7 +254,7 @@ export function PackOpenModal({ result, onConfirm }: PackOpenModalProps) {
         )}
 
         <button
-          onClick={onConfirm}
+          onClick={() => { if (done) { playPurchase(); onConfirm(); } }}
           disabled={!done}
           style={{
             fontFamily: "'VT323', monospace",

@@ -375,6 +375,31 @@ export function playScoreTick() {
   playBloop(440 + Math.random() * 80, 0.025, 'square', 0.25);
 }
 
+/** Shop tab switch */
+export function playTabSwitch() {
+  playNoise(0.01, 0.45, 3200, 0.6);
+  playBloop(620, 0.035, 'square', 0.28);
+  setTimeout(() => playBloop(760, 0.03, 'sine', 0.18), 20);
+}
+
+/** Pack open click/reveal */
+export function playPackOpen() {
+  playNoise(0.03, 0.8, 4200, 0.45);
+  [420, 560, 740].forEach((f, i) => setTimeout(() => playBloop(f, 0.08, 'square', 0.34 - i * 0.05), i * 45));
+}
+
+/** Forge hammer hit */
+export function playForgeHit() {
+  playThud(0.95, 85);
+  playNoise(0.025, 0.8, 2600, 0.5);
+  setTimeout(() => playBloop(480, 0.06, 'sawtooth', 0.25), 20);
+}
+
+/** Forge reveal shimmer */
+export function playForgeReveal() {
+  [660, 880, 1100].forEach((f, i) => setTimeout(() => playBloop(f, 0.12, 'sine', 0.3 - i * 0.04), i * 55));
+}
+
 export function playTimerWarn(urgent = false) {
   // Amber warn: two mid-tone blips
   // Red urgent: three high-pitched stabs
