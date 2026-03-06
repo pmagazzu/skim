@@ -362,6 +362,14 @@ function App() {
                 color: '#ca8a04', fontFamily: "'VT323',monospace", fontSize: 24, letterSpacing: '0.1em',
               }}
             >? HOW TO PLAY</button>
+            <button
+              onClick={() => { handleFirstInteraction(); playButtonPress(); setAppMode('lobby'); }}
+              style={{
+                width: '100%', padding: '14px 0', borderRadius: 12, cursor: 'pointer',
+                background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.4)',
+                color: '#93c5fd', fontFamily: "'VT323',monospace", fontSize: 24, letterSpacing: '0.08em',
+              }}
+            >👥 CO-OP LOBBY</button>
           </div>
           <MenuButton onClick={() => setShowMenu(true)} />
         </div>
@@ -384,8 +392,8 @@ function App() {
       <header className={`flex items-center justify-between px-4 py-1.5 border-b border-white/5 ${state.phase === 'selecting' || state.phase === 'score-review' ? 'hidden' : ''}`} style={{ maxWidth: 430, width: '100%', alignSelf: 'center', boxSizing: 'border-box' }}>
         <div className="flex items-center gap-3">
           <div className="title-font text-2xl gold-glow tracking-widest">SKIM</div>
-          <button onClick={() => setAppMode('lobby')} style={{ fontFamily: "'Press Start 2P',monospace", fontSize: 7, background: 'transparent', border: '1px solid #3a2e1e', borderRadius: 4, color: '#6b5a3e', padding: '3px 7px', cursor: 'pointer', letterSpacing: '0.05em' }}>
-            CO-OP
+          <button onClick={() => { playButtonPress(); setAppMode('lobby'); }} style={{ fontFamily: "'VT323',monospace", fontSize: 14, background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.35)', borderRadius: 6, color: '#93c5fd', padding: '4px 8px', cursor: 'pointer', letterSpacing: '0.05em' }}>
+            👥 CO-OP
           </button>
           <button
             onClick={() => { const m = !musicMuted; setMusicMuted(m); musicManager.setMuted(m); }}
