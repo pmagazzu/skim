@@ -2,17 +2,20 @@
 
 export type MusicTrack = 'menu' | 'gameplay' | 'shop' | 'tension' | 'victory';
 
+const BASE = import.meta.env.BASE_URL ?? '/';
+const musicPath = (file: string) => `${BASE}music/${file}`;
+
 const TRACK_FILES: Record<MusicTrack, string> = {
-  menu:     '/music/menu.mp3',
-  gameplay: '/music/gameplay-a.mp3', // fallback/default, gameplay uses rotating variants below
-  shop:     '/music/shop.mp3',
-  tension:  '/music/tension.mp3',
-  victory:  '/music/victory.mp3',
+  menu:     musicPath('menu.mp3'),
+  gameplay: musicPath('gameplay-a.mp3'), // fallback/default, gameplay uses rotating variants below
+  shop:     musicPath('shop.mp3'),
+  tension:  musicPath('tension.mp3'),
+  victory:  musicPath('victory.mp3'),
 };
 
-const GAMEPLAY_VARIANTS = ['/music/gameplay-a.mp3', '/music/gameplay-b.mp3'] as const;
-const TENSION_VARIANTS  = ['/music/tension-a.mp3', '/music/tension-b.mp3'] as const;
-const VICTORY_VARIANTS  = ['/music/victory-a.mp3', '/music/victory-b.mp3'] as const;
+const GAMEPLAY_VARIANTS = [musicPath('gameplay-a.mp3'), musicPath('gameplay-b.mp3')] as const;
+const TENSION_VARIANTS  = [musicPath('tension-a.mp3'),  musicPath('tension-b.mp3')] as const;
+const VICTORY_VARIANTS  = [musicPath('victory-a.mp3'), musicPath('victory-b.mp3')] as const;
 
 const DEFAULT_VOLUME = 0.35;
 const CROSSFADE_MS   = 1500;
