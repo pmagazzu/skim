@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { ShopItem, UpgradeTypeValue } from '../game/gameState';
 import { UPGRADE_DEFS } from '../game/gameState';
 import type { Bounty } from '../game/bounties';
@@ -8,8 +7,6 @@ import { ChipArt } from './ChipArt';
 import { HAND_NAMES } from '../game/hands';
 import type { HandRankValue } from '../game/hands';
 import { SCORE_TABLE, handUpgradeCost, handBaseAtLevel } from '../game/scoring';
-
-type ShopTab = 'chips' | 'casino' | 'deck' | 'bounties' | 'upgrades' | 'hands' | 'forge';
 
 interface ShopProps {
   items: ShopItem[];
@@ -46,6 +43,18 @@ const CONSUMABLE_ICONS: Record<string, string> = {
   BURNED_HAND: '🔥',
 };
 
+// ── Sub-components ─────────────────────────────────────────────────────────
+
+function SectionHeader({ icon, label }: { icon: string; label: string }) {
+  return (
+    <div className="flex items-center gap-2" style={{ marginTop: 4 }}>
+      <span style={{ fontSize: 16 }}>{icon}</span>
+      <span style={{ fontFamily: "'VT323',monospace", fontSize: 16, color: '#6b5a3e', letterSpacing: '0.12em' }}>{label}</span>
+      <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.05)' }} />
+    </div>
+  );
+}
+
 function RarityBadge({ rarity }: { rarity?: string }) {
   if (!rarity) return null;
   const label = RARITY_LABELS[rarity as keyof typeof RARITY_LABELS] ?? rarity;
@@ -67,31 +76,23 @@ function ShopCard({ item, canBuy, full, onBuy, lowCardCount = 0 }: {
     : isPack ? null : '📈';
   return (
     <div className={['shop-card flex flex-col gap-2', rarityGlow].join(' ')}>
-      <div className="flex items-start justify-between gap-1">
-        <div className="flex items-center gap-2">
-          {isChip ? <ChipArt type={item.chipType!} size={36} /> : icon ? <span className="text-2xl">{icon}</span> : <span className="text-xl opacity-60">📦</span>}
-          <div>
-            <div className="text-amber-200 font-semibold leading-tight" style={{ fontSize: 15 }}>{item.label}</div>
-            {item.rarity && <RarityBadge rarity={item.rarity} />}
-          </div>
+      <div className="flex items-start gap-2">
+        {isChip ? <ChipArt type={item.chipType!} size={34} /> : icon ? <span style={{ fontSize: 22 }}>{icon}</span> : <span style={{ fontSize: 20, opacity: 0.6 }}>📦</span>}
+        <div className="flex-1 min-w-0">
+          <div style={{ color: '#fde68a', fontWeight: 600, fontSize: 14, lineHeight: 1.2 }}>{item.label}</div>
+          {item.rarity && <RarityBadge rarity={item.rarity} />}
         </div>
       </div>
-      {isPack && (
-        <div className="text-sm text-gray-600 flex items-center gap-1">
-          <span>Your deck:</span>
-          <span className={lowCardCount > 10 ? 'text-amber-600' : 'text-gray-500'}>{lowCardCount} low cards</span>
-          {(['FACE_UPGRADE', 'ROYAL_UPGRADE', 'PAIR_UPGRADE'] as string[]).includes(item.packType ?? '') && lowCardCount === 0 && (
-            <span className="text-red-600 text-sm">· none to upgrade</span>
-          )}
-        </div>
+      {isPack && lowCardCount > 0 && (
+        <div style={{ fontSize: 12, color: '#6b7280' }}>Deck: {lowCardCount} low cards</div>
       )}
-      <div className="text-gray-500 flex-1 leading-relaxed" style={{ fontSize: 13 }}>{item.description}</div>
-      <div className="flex items-center justify-between mt-1">
-        <span className="gold-glow font-bold chip-counter" style={{ fontSize: 17 }}>{item.cost}c</span>
+      <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.5, flex: 1 }}>{item.description}</div>
+      <div className="flex items-center justify-between">
+        <span className="gold-glow font-bold chip-counter" style={{ fontSize: 16 }}>{item.cost}c</span>
         <button onClick={canBuy ? onBuy : undefined} disabled={!canBuy}
-          style={{ fontSize: 13, padding: '8px 18px', minHeight: 38 }}
+          style={{ fontSize: 13, padding: '7px 16px', minHeight: 36 }}
           className={canBuy ? 'btn-primary' : 'btn-secondary opacity-40 cursor-default'}>
-          {full ? 'FULL' : !canBuy ? 'CAN\'T' : 'BUY'}
+          {full ? 'FULL' : !canBuy ? "CAN'T" : 'BUY'}
         </button>
       </div>
     </div>
@@ -102,19 +103,22 @@ function BountyCard({ bounty, canAfford, onToggle }: { bounty: Bounty; canAfford
   const fee = bounty.fee ?? 10;
   const disabled = !bounty.accepted && !canAfford;
   return (
-    <div className={['shop-card transition-all', bounty.accepted ? 'border-amber-600/60 bg-amber-950/20' : '', disabled ? 'opacity-50 cursor-default' : 'cursor-pointer'].join(' ')} onClick={disabled ? undefined : onToggle}>
+    <div
+      className={['shop-card transition-all', bounty.accepted ? 'border-amber-600/60 bg-amber-950/20' : '', disabled ? 'opacity-50 cursor-default' : 'cursor-pointer'].join(' ')}
+      onClick={disabled ? undefined : onToggle}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1">
-          <div className="text-amber-200 font-semibold text-sm">{bounty.title}</div>
-          <div className="text-gray-500 text-sm mt-0.5 leading-relaxed">{bounty.description}</div>
+          <div style={{ color: '#fde68a', fontWeight: 600, fontSize: 13 }}>{bounty.title}</div>
+          <div style={{ color: '#6b7280', fontSize: 12, marginTop: 2, lineHeight: 1.5 }}>{bounty.description}</div>
         </div>
         <div className={['text-sm px-2 py-1 rounded border shrink-0', bounty.accepted ? 'border-amber-600 text-amber-400 bg-amber-950/40' : 'border-gray-700 text-gray-600'].join(' ')}>
           {bounty.accepted ? '✓ ON' : 'OFF'}
         </div>
       </div>
       <div className="mt-2 flex items-center justify-between">
-        <span className="text-sm text-emerald-500 font-semibold">🎁 {bounty.rewardLabel}</span>
-        <span className={`text-sm font-semibold ${bounty.accepted ? 'text-gray-600 line-through' : 'text-amber-600'}`}>
+        <span style={{ color: '#4ade80', fontSize: 12, fontWeight: 600 }}>🎁 {bounty.rewardLabel}</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: bounty.accepted ? '#4b5563' : '#d97706', textDecoration: bounty.accepted ? 'line-through' : 'none' }}>
           {bounty.accepted ? `refund ${fee}c` : `${fee}c to accept`}
         </span>
       </div>
@@ -122,32 +126,27 @@ function BountyCard({ bounty, canAfford, onToggle }: { bounty: Bounty; canAfford
   );
 }
 
-function OwnedChipRow({ chip, index, personalChips, onSell }: {
-  chip: ChipTypeValue; index: number; personalChips: number; onSell: () => void;
+function OwnedChipRow({ chip, personalChips, onSell }: {
+  chip: ChipTypeValue; personalChips: number; onSell: () => void;
 }) {
   const def = CHIPS[chip];
   const refund = Math.floor(def.cost * 0.45);
+  void personalChips;
   return (
-    <div className="flex items-center gap-3 p-2 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
-      <ChipArt type={chip} size={32} />
+    <div className="flex items-center gap-3 p-2 rounded-lg border border-white/5 bg-white/[0.02]">
+      <ChipArt type={chip} size={30} />
       <div className="flex-1 min-w-0">
-        <div style={{ fontFamily: "'VT323',monospace", fontSize: 17, color: '#fde68a', lineHeight: 1.2 }}>{def.name}</div>
-        <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#4b5563' }}>{def.description}</div>
+        <div style={{ fontFamily: "'VT323',monospace", fontSize: 16, color: '#fde68a', lineHeight: 1.2 }}>{def.name}</div>
+        <div style={{ fontFamily: "'VT323',monospace", fontSize: 13, color: '#4b5563' }}>{def.description}</div>
       </div>
-      <div className="flex flex-col items-end gap-1">
-        <button onClick={onSell} title={`Sell for ${refund}c`}
-          style={{ fontSize: 13, padding: '6px 12px', minHeight: 36 }}
-          className="border border-red-900/60 text-red-500 rounded hover:bg-red-950/30 transition-colors">
-          SELL {refund}c
-        </button>
-      </div>
+      <button onClick={onSell}
+        style={{ fontSize: 12, padding: '5px 10px', minHeight: 32, flexShrink: 0 }}
+        className="border border-red-900/60 text-red-500 rounded hover:bg-red-950/30 transition-colors">
+        SELL {refund}c
+      </button>
     </div>
   );
 }
-
-const HAND_ICONS: Record<number, string> = {
-  1:'🃏', 2:'👯', 3:'✌️', 4:'🎰', 5:'➡️', 6:'♠️', 7:'🏠', 8:'⚡', 9:'🌊', 10:'👑',
-};
 
 function HandUpgradeCard({ rank, level, canBuy, discount, onBuy }: {
   rank: HandRankValue; level: number; canBuy: boolean; discount: number; onBuy: () => void;
@@ -158,18 +157,17 @@ function HandUpgradeCard({ rank, level, canBuy, discount, onBuy }: {
   const rawCost = handUpgradeCost(rank, level);
   const cost = Math.max(1, Math.ceil(rawCost * (1 - discount)));
   return (
-    <div className="shop-card flex items-center gap-3" style={{ padding: '12px 14px' }}>
-      <span style={{ fontSize: 24, flexShrink: 0 }}>{HAND_ICONS[rank]}</span>
+    <div className="shop-card flex items-center gap-3" style={{ padding: '10px 12px' }}>
       <div className="flex-1 min-w-0">
-        <div style={{ fontFamily: "'VT323',monospace", fontSize: 18, color: '#fde68a', lineHeight: 1.2 }}>{HAND_NAMES[rank]}</div>
-        <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#4b5563' }}>
-          {currentBase} → <span style={{ color: '#4ade80' }}>{nextBase}</span> chips · ×{cfg.mult}
+        <div style={{ fontFamily: "'VT323',monospace", fontSize: 17, color: '#fde68a', lineHeight: 1.2 }}>{HAND_NAMES[rank]}</div>
+        <div style={{ fontFamily: "'VT323',monospace", fontSize: 13, color: '#4b5563' }}>
+          {currentBase} → <span style={{ color: '#4ade80' }}>{nextBase}</span> · ×{cfg.mult}
         </div>
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
-        <span style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#a78bfa' }}>Lv.{level}</span>
+        <span style={{ fontFamily: "'VT323',monospace", fontSize: 13, color: '#a78bfa' }}>Lv.{level}</span>
         <button onClick={canBuy ? onBuy : undefined} disabled={!canBuy}
-          style={{ fontSize: 13, padding: '7px 14px', minHeight: 36 }}
+          style={{ fontSize: 12, padding: '6px 12px', minHeight: 32 }}
           className={canBuy ? 'btn-primary' : 'btn-secondary opacity-40 cursor-default'}>
           {cost}c UP
         </button>
@@ -178,110 +176,87 @@ function HandUpgradeCard({ rank, level, canBuy, discount, onBuy }: {
   );
 }
 
-function TabButton({ label, active, onClick, badge }: { label: string; active: boolean; onClick: () => void; badge?: number }) {
-  return (
-    <button onClick={onClick} style={{ whiteSpace: 'nowrap', flexShrink: 0, fontSize: 11, padding: '8px 12px', minHeight: 40 }} className={['relative rounded transition-all', active ? 'btn-primary' : 'btn-secondary'].join(' ')}>
-      {label}
-      {badge !== undefined && badge > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-amber-500 text-black text-sm flex items-center justify-center font-bold" style={{ fontSize: 9 }}>{badge}</span>
-      )}
-    </button>
-  );
-}
+// ── Main Shop ──────────────────────────────────────────────────────────────
 
 export function Shop({
   items, personalChips, consumableCount, chipCount, maxChips, deckSize, lowCardCount,
   availableBounties, chipStack, purchasedUpgrades, shopDiscount,
   handLevels, shopHandUpgrades, handRerollCost,
-  onBuy, onAcceptBounty, onSellChip, onBuyUpgrade, onBuyHandUpgrade, onRerollHandUpgrades, onBuyForge, currentTheme, onSetTheme, onViewDeck, onEndShop,
+  onBuy, onAcceptBounty, onSellChip, onBuyUpgrade, onBuyHandUpgrade, onRerollHandUpgrades, onBuyForge,
+  currentTheme, onSetTheme, onViewDeck, onEndShop,
 }: ShopProps) {
-  const [tab, setTab] = useState<ShopTab>('chips');
-
-  const chipItems    = items.filter(i => i.type === 'chip');
-  const casinoItems  = items.filter(i => i.type === 'consumable' || i.type === 'skim-upgrade');
-  const packItems    = items.filter(i => i.type === 'pack');
+  const chipItems   = items.filter(i => i.type === 'chip');
+  const casinoItems = items.filter(i => i.type === 'consumable' || i.type === 'skim-upgrade');
+  const packItems   = items.filter(i => i.type === 'pack');
+  // Show up to 2 bounties in the shop
+  const shopBounties = availableBounties.slice(0, 2);
 
   return (
-    <div className="flex flex-col gap-4 p-3 w-full" style={{ overflowY: 'visible' }}>
+    <div className="flex flex-col gap-4 p-3 w-full">
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="title-font text-2xl gold-glow tracking-widest">— SHOP —</div>
         <div className="flex flex-col items-end gap-0.5">
           <div style={{ fontFamily: "'VT323',monospace", fontSize: 20, color: '#6b7280' }}>
             Bank: <span className="gold-glow chip-counter" style={{ fontSize: 22 }}>{personalChips.toLocaleString()}c</span>
-            {shopDiscount > 0 && <span style={{ color: '#4ade80', fontSize: 15, marginLeft: 8 }}>-{Math.round(shopDiscount * 100)}% off</span>}
+            {shopDiscount > 0 && <span style={{ color: '#4ade80', fontSize: 14, marginLeft: 8 }}>-{Math.round(shopDiscount * 100)}% off</span>}
           </div>
-          <div style={{ fontFamily: "'VT323',monospace", fontSize: 15, color: '#4b5563', display: 'flex', gap: 12 }}>
+          <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#4b5563', display: 'flex', gap: 10 }}>
             <span>Deck: {deckSize}</span>
             <span>Chips: {chipCount}/{maxChips}</span>
-            <button onClick={onViewDeck} style={{ color: '#92400e', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit' }}>View Deck</button>
+            <button onClick={onViewDeck} style={{ color: '#92400e', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit' }}>
+              View
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Your Stack — always visible */}
-      {chipStack.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-3">
-            <span style={{ fontFamily: "'VT323',monospace", fontSize: 15, color: '#4b5563', letterSpacing: '0.1em' }}>YOUR STACK</span>
-            <div className="flex-1 h-px bg-white/5" />
-            <span style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#4b5563' }}>sell = 45% back</span>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            {chipStack.map((chip, i) => (
-              <OwnedChipRow key={`${chip}-${i}`} chip={chip} index={i} personalChips={personalChips} onSell={() => onSellChip(i)} />
-            ))}
+      {/* ── CHIPS ───────────────────────────────────────────── */}
+      {chipItems.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <SectionHeader icon="🪙" label="CHIPS" />
+          <div className="grid grid-cols-2 gap-2">
+            {chipItems.map(item => {
+              const full = chipCount >= maxChips;
+              const canBuy = personalChips >= item.cost && !full;
+              return <ShopCard key={item.id} item={item} canBuy={canBuy} full={full} onBuy={() => onBuy(item.id)} />;
+            })}
           </div>
         </div>
       )}
 
-      {/* Tab nav — single row, no wrap */}
-      <div className="flex gap-1" style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', paddingTop: 8, paddingBottom: 2 }}>
-        <TabButton label="CHIPS"    active={tab === 'chips'}    onClick={() => setTab('chips')}    badge={chipItems.length} />
-        <TabButton label="CASINO"   active={tab === 'casino'}   onClick={() => setTab('casino')}   badge={casinoItems.length} />
-        <TabButton label="DECK"     active={tab === 'deck'}     onClick={() => setTab('deck')}     badge={packItems.length} />
-        <TabButton label="HANDS"    active={tab === 'hands'}    onClick={() => setTab('hands')}    badge={shopHandUpgrades.length} />
-        <TabButton label="BOUNTIES" active={tab === 'bounties'} onClick={() => setTab('bounties')} badge={availableBounties.filter(b => !b.accepted).length} />
-        <TabButton label="UPGRADES" active={tab === 'upgrades'} onClick={() => setTab('upgrades')} />
-        <TabButton label="FORGE"    active={tab === 'forge'}    onClick={() => setTab('forge')} />
-      </div>
-
-      {/* Tab: Chips */}
-      {tab === 'chips' && (
-        <div className="grid grid-cols-2 gap-3">
-          {chipItems.map(item => {
-            const full = chipCount >= maxChips;
-            const canBuy = personalChips >= item.cost && !full;
-            return <ShopCard key={item.id} item={item} canBuy={canBuy} full={full} onBuy={() => onBuy(item.id)} />;
-          })}
+      {/* ── CASINO ──────────────────────────────────────────── */}
+      {casinoItems.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <SectionHeader icon="🎰" label="CASINO" />
+          <div className="flex flex-col gap-2">
+            {casinoItems.map(item => {
+              const full = item.type === 'consumable' && consumableCount >= 4;
+              const canBuy = personalChips >= item.cost && !full;
+              return <ShopCard key={item.id} item={item} canBuy={canBuy} full={full} onBuy={() => onBuy(item.id)} />;
+            })}
+          </div>
         </div>
       )}
 
-      {/* Tab: Casino */}
-      {tab === 'casino' && (
-        <div className="flex flex-col gap-3">
-          {casinoItems.map(item => {
-            const full = item.type === 'consumable' && consumableCount >= 4;
-            const canBuy = personalChips >= item.cost && !full;
-            return <ShopCard key={item.id} item={item} canBuy={canBuy} full={full} onBuy={() => onBuy(item.id)} />;
-          })}
+      {/* ── DECK ────────────────────────────────────────────── */}
+      {packItems.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <SectionHeader icon="📦" label="DECK" />
+          <div className="flex flex-col gap-2">
+            {packItems.map(item => {
+              const canBuy = personalChips >= item.cost;
+              return <ShopCard key={item.id} item={item} canBuy={canBuy} full={false} onBuy={() => onBuy(item.id)} lowCardCount={lowCardCount} />;
+            })}
+          </div>
         </div>
       )}
 
-      {/* Tab: Deck */}
-      {tab === 'deck' && (
-        <div className="flex flex-col gap-3">
-          {packItems.map(item => {
-            const canBuy = personalChips >= item.cost;
-            return <ShopCard key={item.id} item={item} canBuy={canBuy} full={false} onBuy={() => onBuy(item.id)} lowCardCount={lowCardCount} />;
-          })}
-          {packItems.length === 0 && <div className="text-gray-600 text-sm text-center py-4">No packs available this round.</div>}
-        </div>
-      )}
-
-      {/* Tab: Hands */}
-      {tab === 'hands' && (
-        <div className="flex flex-col gap-3">
+      {/* ── HANDS ───────────────────────────────────────────── */}
+      <div className="flex flex-col gap-2">
+        <SectionHeader icon="🃏" label="HANDS" />
+        {shopHandUpgrades.length > 0 ? (
           <div className="flex flex-col gap-2">
             {shopHandUpgrades.map(rank => (
               <HandUpgradeCard
@@ -293,49 +268,67 @@ export function Shop({
                 onBuy={() => onBuyHandUpgrade(rank)}
               />
             ))}
-            {shopHandUpgrades.length === 0 && (
-              <div className="text-gray-600 text-sm text-center py-4">No hand upgrades this visit.</div>
-            )}
           </div>
-          {/* Reroll */}
-          <button
-            onClick={personalChips >= handRerollCost ? onRerollHandUpgrades : undefined}
-            disabled={personalChips < handRerollCost}
-            style={{ fontSize: 14, padding: '10px 0', width: '100%' }}
-            className={personalChips >= handRerollCost ? 'btn-secondary' : 'btn-secondary opacity-30 cursor-default'}
-          >
-            🎲 Reroll for {handRerollCost}c
-          </button>
-          {/* All hand levels reference */}
-          <div className="border-t border-white/5 pt-2">
-            <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#4b5563', letterSpacing: '0.1em', marginBottom: 8 }}>ALL HAND LEVELS</div>
-            <div className="flex flex-col gap-1">
-              {(Object.keys(SCORE_TABLE) as unknown as HandRankValue[]).map(Number).map((r: HandRankValue) => {
-                const lv = handLevels[r] ?? 1;
-                return (
-                  <div key={r} className="flex items-center justify-between px-2 py-1.5 rounded bg-white/[0.02]">
-                    <span style={{ fontFamily: "'VT323',monospace", fontSize: 16, color: '#9ca3af' }}>{HAND_NAMES[r]}</span>
-                    <span style={{ fontFamily: "'VT323',monospace", fontSize: 16, color: lv > 1 ? '#a78bfa' : '#6b5a3e' }}>Lv.{lv} · {handBaseAtLevel(r, lv)}c</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+        ) : (
+          <div style={{ color: '#4b5563', fontSize: 13, textAlign: 'center', padding: '8px 0' }}>No upgrades this visit.</div>
+        )}
+        <button
+          onClick={personalChips >= handRerollCost ? onRerollHandUpgrades : undefined}
+          disabled={personalChips < handRerollCost}
+          style={{ fontSize: 13, padding: '8px 0', width: '100%' }}
+          className={personalChips >= handRerollCost ? 'btn-secondary' : 'btn-secondary opacity-30 cursor-default'}
+        >
+          🎲 Reroll hands — {handRerollCost}c
+        </button>
+      </div>
 
-      {/* Tab: Bounties */}
-      {tab === 'bounties' && (
+      {/* ── BOUNTIES ────────────────────────────────────────── */}
+      {shopBounties.length > 0 && (
         <div className="flex flex-col gap-2">
-          {availableBounties.map(b => (
+          <SectionHeader icon="🎯" label="BOUNTIES" />
+          {shopBounties.map(b => (
             <BountyCard key={b.id} bounty={b} canAfford={personalChips >= (b.fee ?? 10)} onToggle={() => onAcceptBounty(b.id)} />
           ))}
-          {availableBounties.length === 0 && <div className="text-gray-600 text-sm text-center py-4">No bounties available.</div>}
         </div>
       )}
 
-      {/* Tab: Upgrades */}
-      {tab === 'upgrades' && (
+      {/* ── FORGE ───────────────────────────────────────────── */}
+      <div className="flex flex-col gap-2">
+        <SectionHeader icon="⚒" label="FORGE" />
+        <div style={{ fontFamily: "'VT323',monospace", fontSize: 13, color: '#4b5563', lineHeight: 1.6, marginBottom: 2 }}>
+          Apply a random modifier to a random unmodified card in your deck.
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {([
+            { rarity: 'common' as const,    cost: 20,  label: 'Common',    desc: 'Polished or Scarred',     color: '#d1d5db' },
+            { rarity: 'uncommon' as const,  cost: 45,  label: 'Uncommon',  desc: 'Charged, Hot, or Wild',   color: '#a78bfa' },
+            { rarity: 'rare' as const,      cost: 90,  label: 'Rare',      desc: 'Volatile or Ghost',       color: '#f87171' },
+            { rarity: 'legendary' as const, cost: 200, label: 'Legendary', desc: 'Cursed or Mimic',         color: '#fbbf24' },
+          ]).map(({ rarity, cost, label, desc, color }) => {
+            const canAfford = personalChips >= cost;
+            return (
+              <div key={rarity} className="shop-card flex flex-col gap-1.5" style={{ padding: '10px 12px' }}>
+                <div style={{ color, fontFamily: "'VT323',monospace", fontSize: 15 }}>{label}</div>
+                <div style={{ color: '#6b7280', fontSize: 12, flex: 1 }}>{desc}</div>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="gold-glow font-bold chip-counter" style={{ fontSize: 14 }}>{cost}c</span>
+                  <button
+                    onClick={canAfford ? () => onBuyForge(rarity) : undefined}
+                    disabled={!canAfford}
+                    style={{ fontSize: 12, padding: '5px 12px', minHeight: 30 }}
+                    className={canAfford ? 'btn-primary' : 'btn-secondary opacity-40 cursor-default'}>
+                    FORGE
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── UPGRADES ────────────────────────────────────────── */}
+      <div className="flex flex-col gap-2">
+        <SectionHeader icon="🔧" label="UPGRADES" />
         <div className="flex flex-col gap-2">
           {(Object.keys(UPGRADE_DEFS) as UpgradeTypeValue[]).map(key => {
             const def = UPGRADE_DEFS[key];
@@ -343,22 +336,20 @@ export function Shop({
             const discountedCost = Math.max(1, Math.floor(def.cost * (1 - shopDiscount)));
             const canBuy = !owned && personalChips >= discountedCost;
             return (
-              <div key={key} className={['shop-card flex flex-col gap-1.5', owned ? 'opacity-60' : ''].join(' ')}>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{def.icon}</span>
-                  <div className="flex-1">
-                    <div className="text-amber-200 font-semibold text-sm">{def.label}</div>
-                    <div className="text-gray-500 text-sm leading-relaxed">{def.description}</div>
-                  </div>
+              <div key={key} className={['shop-card flex items-center gap-3', owned ? 'opacity-50' : ''].join(' ')} style={{ padding: '10px 12px' }}>
+                <span style={{ fontSize: 22, flexShrink: 0 }}>{def.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <div style={{ color: '#fde68a', fontWeight: 600, fontSize: 13 }}>{def.label}</div>
+                  <div style={{ color: '#6b7280', fontSize: 12, lineHeight: 1.5 }}>{def.description}</div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className={owned ? 'text-emerald-500 text-sm font-bold' : 'gold-glow font-bold text-sm chip-counter'}>
-                    {owned ? '✓ OWNED' : `${discountedCost}c`}
-                  </span>
-                  {!owned && (
+                <div className="shrink-0">
+                  {owned ? (
+                    <span style={{ color: '#4ade80', fontSize: 13, fontWeight: 700 }}>✓</span>
+                  ) : (
                     <button onClick={canBuy ? () => onBuyUpgrade(key) : undefined} disabled={!canBuy}
-                      className={canBuy ? 'btn-primary text-sm px-4 py-1.5' : 'btn-secondary text-sm px-4 py-1.5 opacity-40 cursor-default'}>
-                      BUY
+                      style={{ fontSize: 12, padding: '5px 12px', minHeight: 32 }}
+                      className={canBuy ? 'btn-primary' : 'btn-secondary opacity-40 cursor-default'}>
+                      {discountedCost}c
                     </button>
                   )}
                 </div>
@@ -366,71 +357,49 @@ export function Shop({
             );
           })}
         </div>
-      )}
+      </div>
 
-      {/* Tab: Forge */}
-      {tab === 'forge' && (
-        <div className="flex flex-col gap-4">
-          <div style={{ fontFamily: "'Press Start 2P',monospace", fontSize: 8, color: '#6b5a3e', lineHeight: 1.8 }}>
-            Apply a random modifier to a random unmodified card in your deck.
-            Higher rarity = more powerful effects.
+      {/* ── YOUR STACK ──────────────────────────────────────── */}
+      {chipStack.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <SectionHeader icon="🎰" label="YOUR STACK" />
+            <span style={{ fontFamily: "'VT323',monospace", fontSize: 13, color: '#4b5563' }}>sell = 45% back</span>
           </div>
-          {([
-            { rarity: 'common' as const,    cost: 20,  label: '💎 Common Forge',    desc: 'Polished (+10c) or Scarred (+15c)',           color: '#d1d5db' },
-            { rarity: 'uncommon' as const,  cost: 45,  label: '⚡ Uncommon Forge',  desc: 'Charged, Hot (×1.5), or Wild (any suit)',    color: '#a78bfa' },
-            { rarity: 'rare' as const,      cost: 90,  label: '💣 Rare Forge',      desc: 'Volatile (+50/−20) or Ghost (rank-hidden)',   color: '#f87171' },
-            { rarity: 'legendary' as const, cost: 200, label: '💀 Legendary Forge', desc: 'Cursed (+80, burns) or Mimic (copy modifier)', color: '#fbbf24' },
-          ]).map(({ rarity, cost, label, desc, color }) => {
-            const canAfford = personalChips >= cost;
-            return (
-              <div key={rarity} className="shop-card flex flex-col gap-2">
-                <div style={{ color, fontFamily: "'Press Start 2P',monospace", fontSize: 9 }}>{label}</div>
-                <div className="text-gray-500 text-sm">{desc}</div>
-                <div className="flex items-center justify-between">
-                  <span className="gold-glow font-bold text-sm chip-counter">{cost}c</span>
-                  <button
-                    onClick={canAfford ? () => onBuyForge(rarity) : undefined}
-                    disabled={!canAfford}
-                    className={canAfford ? 'btn-primary text-sm px-4 py-1.5' : 'btn-secondary text-sm px-4 py-1.5 opacity-40 cursor-default'}
-                  >
-                    FORGE
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-          <div style={{ fontFamily: "'VT323',monospace", fontSize: 13, color: '#4b5563', textAlign: 'center' }}>
-            Cards already modified cannot be targeted again.
+          <div className="flex flex-col gap-1.5">
+            {chipStack.map((chip, i) => (
+              <OwnedChipRow key={`${chip}-${i}`} chip={chip} personalChips={personalChips} onSell={() => onSellChip(i)} />
+            ))}
           </div>
         </div>
       )}
 
-      {/* Theme switcher */}
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 12 }}>
-        <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: 'var(--text-dim)', letterSpacing: '0.1em', marginBottom: 8, textAlign: 'center' }}>COLOR THEME</div>
+      {/* ── THEME ───────────────────────────────────────────── */}
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 10 }}>
+        <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#4b5563', letterSpacing: '0.1em', marginBottom: 8, textAlign: 'center' }}>COLOR THEME</div>
         <div className="flex gap-2 justify-center flex-wrap">
           {([
-            { id: 'gold',  label: '🟡', title: 'GOLD'  },
-            { id: 'neon',  label: '🔵', title: 'NEON'  },
-            { id: 'blood', label: '🔴', title: 'BLOOD' },
-            { id: 'ice',   label: '🩵', title: 'ICE'   },
-            { id: 'smoke', label: '⬜', title: 'SMOKE' },
+            { id: 'gold',  label: '🟡 GOLD'  },
+            { id: 'neon',  label: '🔵 NEON'  },
+            { id: 'blood', label: '🔴 BLOOD' },
+            { id: 'ice',   label: '🩵 ICE'   },
+            { id: 'smoke', label: '⬜ SMOKE' },
           ] as const).map(t => (
-            <button key={t.id} onClick={() => onSetTheme(t.id)} title={t.title}
+            <button key={t.id} onClick={() => onSetTheme(t.id)}
               style={{
-                fontFamily: "'Press Start 2P',monospace", fontSize: 9,
-                padding: '6px 10px', borderRadius: 6, cursor: 'pointer', minHeight: 36,
+                fontFamily: "'Press Start 2P',monospace", fontSize: 8,
+                padding: '6px 10px', borderRadius: 6, cursor: 'pointer', minHeight: 34,
                 background: currentTheme === t.id ? 'rgba(255,255,255,0.1)' : 'transparent',
                 border: `1px solid ${currentTheme === t.id ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
                 color: currentTheme === t.id ? '#fff' : 'rgba(255,255,255,0.4)',
               }}>
-              {t.label} {t.title}
+              {t.label}
             </button>
           ))}
         </div>
       </div>
 
-      <button onClick={onEndShop} className="btn-primary w-full mt-2" style={{ fontSize: 16, padding: '14px 0' }}>
+      <button onClick={onEndShop} className="btn-primary w-full" style={{ fontSize: 16, padding: '14px 0' }}>
         NEXT ROUND →
       </button>
     </div>
