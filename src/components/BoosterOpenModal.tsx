@@ -3,6 +3,7 @@ import type { BoosterOption, BoosterTypeValue, ShopItem } from '../game/gameStat
 import { playBoosterOpen, playBoosterPick } from '../audio/sounds';
 import { ChipArt } from './ChipArt';
 import { HAND_NAMES } from '../game/hands';
+import { CHIPS, RARITY_LABELS } from '../game/chips';
 
 interface BoosterOpenModalProps {
   booster: ShopItem;
@@ -49,6 +50,26 @@ function OptionVisual({ opt }: { opt: BoosterOption }) {
   return <div style={{ fontSize: 24 }}>✨</div>;
 }
 
+type UiRarity = 'common' | 'uncommon' | 'rare' | 'legendary';
+
+function optionRarity(opt: BoosterOption): UiRarity {
+  if (opt.kind === 'chip' && opt.chipType) return CHIPS[opt.chipType].rarity;
+  if (opt.kind === 'forge' && opt.forgeRarity) return opt.forgeRarity;
+  if (opt.kind === 'hand-upgrade') return 'uncommon';
+  if (opt.kind === 'skim-upgrade') return 'rare';
+  if (opt.kind === 'bounty') return 'uncommon';
+  if (opt.kind === 'consumable') return 'common';
+  if (opt.kind === 'chips') return 'common';
+  return 'common';
+}
+
+function rarityColor(r: UiRarity): string {
+  if (r === 'legendary') return '#f59e0b';
+  if (r === 'rare') return '#a855f7';
+  if (r === 'uncommon') return '#3b82f6';
+  return '#6b7280';
+}
+
 export function BoosterOpenModal({ booster, options, onPick, onDismiss }: BoosterOpenModalProps) {
   const [revealed, setRevealed] = useState(0);
 
@@ -75,21 +96,30 @@ export function BoosterOpenModal({ booster, options, onPick, onDismiss }: Booste
         <div className="grid grid-cols-1 gap-2">
           {options.map((opt, i) => {
             const show = i < revealed;
+            const r = optionRarity(opt);
+            const rColor = rarityColor(r);
             return (
               <button
                 key={opt.id}
                 onClick={show ? () => { playBoosterPick(); onPick(opt.id); } : undefined}
                 disabled={!show}
                 className={show ? 'shop-card text-left deal-in' : 'shop-card opacity-30 text-left'}
-                style={{ transition: 'transform 0.1s cubic-bezier(0.34,1.4,0.64,1), box-shadow 0.1s, border-color 0.1s', minHeight: 72, animationDelay: `${i * 120}ms` }}
+                style={{ transition: 'transform 0.1s cubic-bezier(0.34,1.4,0.64,1), box-shadow 0.1s, border-color 0.1s', minHeight: 72, animationDelay: `${i * 120}ms`, borderColor: show ? `${rColor}66` : undefined }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {show ? <OptionVisual opt={opt} /> : <div style={{ fontSize: 18 }}>?</div>}
                   </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontFamily: "'VT323',monospace", fontSize: 22, color: '#f8d082', lineHeight: 1 }}>
-                      {show ? opt.label : '???'}
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <div style={{ fontFamily: "'VT323',monospace", fontSize: 22, color: '#f8d082', lineHeight: 1 }}>
+                        {show ? opt.label : '???'}
+                      </div>
+                      {show && (
+                        <div style={{ fontFamily: "'VT323',monospace", fontSize: 12, color: rColor, letterSpacing: '0.08em' }}>
+                          {RARITY_LABELS[r]}
+                        </div>
+                      )}
                     </div>
                     <div style={{ fontFamily: "'VT323',monospace", fontSize: 13, color: '#9ca3af' }}>
                       {show ? opt.detail : 'Revealing...'}
