@@ -611,18 +611,7 @@ function App() {
                     🎯 {state.activeBounties.filter(b => !b.completed).length} active
                   </div>
                 )}
-                <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', gap: 6, alignItems: 'center', fontFamily: "'VT323',monospace", fontSize: 12, color: '#7c6b4d' }}>
-                  <span>Seed: {state.runSeed}</span>
-                  <button
-                    className="btn-secondary px-2 py-0.5"
-                    onClick={() => {
-                      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(state.runSeed);
-                      else {
-                        const ta = document.createElement('textarea'); ta.value = state.runSeed; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-                      }
-                    }}
-                  >Copy</button>
-                </div>
+
               </div>
 
               {/* Row 2: community left | hand right */}
