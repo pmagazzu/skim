@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { playChipBloop, playCardSelect, playCardDeselect, playCardDeal, playDiscard, playButtonPress, playHandPlay, playRoundWin, playRoundFail, playPurchase, playTimerWarn, playScoreImpact, playChipBloopScaled, playScoreSlamFinal, playVaultSeal } from './audio/sounds';
+import { initMusic, musicManager } from './audio/music';
 import { useGameState } from './hooks/useGameState';
 import { Hand } from './components/Hand';
 import { CommunityCards } from './components/CommunityCards';
@@ -26,9 +27,10 @@ import { UpgradeType } from './game/gameState';
 type SortMode = 'dealt' | 'high' | 'low' | 'suit';
 
 // ── Menu panel overlay — triggered by inline MENU buttons ──
-function MenuPanel({ open, onClose, onDevWin, onCatalog, onTutorial, onMainMenu }: {
+function MenuPanel({ open, onClose, onDevWin, onCatalog, onTutorial, onMainMenu, musicVolume, onMusicVolume }: {
   open: boolean; onClose: () => void; onDevWin: () => void; onCatalog: () => void;
   onTutorial?: () => void; onMainMenu?: () => void;
+  musicVolume?: number; onMusicVolume?: (v: number) => void;
 }) {
   if (!open) return null;
   return (
@@ -84,6 +86,17 @@ function MenuPanel({ open, onClose, onDevWin, onCatalog, onTutorial, onMainMenu 
               ← MAIN MENU
             </button>
           )}
+          {onMusicVolume !== undefined && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px' }}>
+              <span style={{ fontFamily: "'VT323',monospace", fontSize: 17, color: '#6b5a3e', flexShrink: 0 }}>🎵 VOL</span>
+              <input
+                type="range" min={0} max={1} step={0.01}
+                value={musicVolume ?? 0.35}
+                onChange={e => onMusicVolume(parseFloat(e.target.value))}
+                style={{ flex: 1, accentColor: '#ca8a04' }}
+              />
+            </div>
+          )}
           <button
             onClick={onClose}
             style={{
@@ -135,6 +148,9 @@ function App() {
   const timerWarnedUrgent = useRef(false);
   const prevScore = useRef<number | null>(null);
   const [shakeTier, setShakeTier] = useState(0);
+  const [musicMuted, setMusicMuted] = useState(false);
+  const [musicVolume, setMusicVolume] = useState(0.35);
+  const musicInited = useRef(false);
 
   // Apply theme to document root
   useEffect(() => {
@@ -165,6 +181,28 @@ function App() {
       setTimeout(() => playScoreSlamFinal(tier), chipDelay);
     }
   }, [state.lastScore, state.lastFiredChips, state.vaultTarget, state.bestHandRankThisRound]);
+
+  // ── Music logic ──
+  useEffect(() => {
+    if (!musicInited.current) return;
+    if (appScreen === 'mainmenu') {
+      musicManager.play('menu');
+      return;
+    }
+    if (appScreen !== 'game') return;
+    const phase = state.phase;
+    if (phase === 'shop') {
+      musicManager.play('shop');
+    } else if (phase === 'ante-complete' || phase === 'bust' || phase === 'victory' || phase === 'game-over') {
+      musicManager.play('victory');
+    } else if (phase === 'selecting' || phase === 'dealing' || phase === 'score-review' || phase === 'round-end') {
+      if (state.personalChips < 20 && state.personalChips > 0) {
+        musicManager.play('tension');
+      } else {
+        musicManager.play('gameplay');
+      }
+    }
+  }, [appScreen, state.phase, state.personalChips]);
 
   const prevPhase = useRef<string | null>(null);
   // Play round result sounds on phase transition
@@ -244,6 +282,14 @@ function App() {
 
   const totalSkimmed = state.roundHistory.reduce((s, r) => s + r.personalChips, 0);
 
+  function handleFirstInteraction() {
+    if (!musicInited.current) {
+      musicInited.current = true;
+      initMusic();
+      musicManager.play('menu');
+    }
+  }
+
   // Co-op mode routing
   if (appMode === 'lobby') {
     return <Lobby
@@ -275,7 +321,7 @@ function App() {
           <div style={{ fontFamily: "'VT323',monospace", fontSize: 28, color: '#3a2e1e', letterSpacing: '0.3em' }}>♠ ♥ ♦ ♣</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%' }}>
             <button
-              onClick={() => setAppScreen('game')}
+              onClick={() => { handleFirstInteraction(); setAppScreen('game'); }}
               style={{
                 width: '100%', padding: '18px 0', borderRadius: 12, cursor: 'pointer',
                 background: 'linear-gradient(135deg, #92400e, #ca8a04)',
@@ -285,7 +331,7 @@ function App() {
               }}
             >▶ PLAY</button>
             <button
-              onClick={() => setAppScreen('tutorial')}
+              onClick={() => { handleFirstInteraction(); setAppScreen('tutorial'); }}
               style={{
                 width: '100%', padding: '16px 0', borderRadius: 12, cursor: 'pointer',
                 background: 'rgba(255,255,255,0.03)', border: '1px solid #3a2e1e',
@@ -295,7 +341,7 @@ function App() {
           </div>
           <MenuButton onClick={() => setShowMenu(true)} />
         </div>
-        <MenuPanel open={showMenu} onClose={() => setShowMenu(false)} onDevWin={() => {}} onCatalog={() => setShowCatalog(true)} />
+        <MenuPanel open={showMenu} onClose={() => setShowMenu(false)} onDevWin={() => {}} onCatalog={() => setShowCatalog(true)} musicVolume={musicVolume} onMusicVolume={v => { setMusicVolume(v); musicManager.setVolume(v); }} />
         {showCatalog && <DebugIndex onClose={() => setShowCatalog(false)} />}
       </div>
     );
@@ -316,6 +362,13 @@ function App() {
           <div className="title-font text-2xl gold-glow tracking-widest">SKIM</div>
           <button onClick={() => setAppMode('lobby')} style={{ fontFamily: "'Press Start 2P',monospace", fontSize: 7, background: 'transparent', border: '1px solid #3a2e1e', borderRadius: 4, color: '#6b5a3e', padding: '3px 7px', cursor: 'pointer', letterSpacing: '0.05em' }}>
             CO-OP
+          </button>
+          <button
+            onClick={() => { const m = !musicMuted; setMusicMuted(m); musicManager.setMuted(m); }}
+            title={musicMuted ? 'Unmute music' : 'Mute music'}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 16, padding: '2px 4px', opacity: musicMuted ? 0.5 : 1 }}
+          >
+            {musicMuted ? '🔇' : '🎵'}
           </button>
         </div>
 
@@ -792,6 +845,8 @@ function App() {
         onCatalog={() => setShowCatalog(true)}
         onTutorial={() => setAppScreen('tutorial')}
         onMainMenu={() => { dispatch({ type: 'RESET' }); setAppScreen('mainmenu'); }}
+        musicVolume={musicVolume}
+        onMusicVolume={v => { setMusicVolume(v); musicManager.setVolume(v); }}
       />
       {showCatalog && <DebugIndex onClose={() => setShowCatalog(false)} />}
       {state.forgeResult && (

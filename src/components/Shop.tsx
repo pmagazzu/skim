@@ -7,6 +7,7 @@ import { ChipArt } from './ChipArt';
 import { HAND_NAMES } from '../game/hands';
 import type { HandRankValue } from '../game/hands';
 import { SCORE_TABLE, handUpgradeCost, handBaseAtLevel } from '../game/scoring';
+import { playButtonPunch } from '../audio/sounds';
 
 interface ShopProps {
   items: ShopItem[];
@@ -89,7 +90,13 @@ function ShopCard({ item, canBuy, full, onBuy, lowCardCount = 0 }: {
       <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.5, flex: 1 }}>{item.description}</div>
       <div className="flex items-center justify-between">
         <span className="gold-glow font-bold chip-counter" style={{ fontSize: 16 }}>{item.cost}c</span>
-        <button onClick={canBuy ? onBuy : undefined} disabled={!canBuy}
+        <button onClick={canBuy ? (e) => {
+          playButtonPunch();
+          const btn = e.currentTarget as HTMLButtonElement;
+          btn.classList.add('btn-punch');
+          setTimeout(() => btn.classList.remove('btn-punch'), 220);
+          onBuy();
+        } : undefined} disabled={!canBuy}
           style={{ fontSize: 13, padding: '7px 16px', minHeight: 36 }}
           className={canBuy ? 'btn-primary' : 'btn-secondary opacity-40 cursor-default'}>
           {full ? 'FULL' : !canBuy ? "CAN'T" : 'BUY'}

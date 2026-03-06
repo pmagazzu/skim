@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { ScoreStep } from '../game/chips';
 import { CHIPS } from '../game/chips';
 
@@ -18,6 +19,19 @@ const CHIP_COLORS: Record<string, string> = {
 export function ScoreChain({ baseScore, handName, steps, finalScore, skimRate }: ScoreChainProps) {
   const skimmed = Math.floor(finalScore * skimRate);
   const toVault = finalScore - skimmed;
+  const finalRef = useRef<HTMLSpanElement | null>(null);
+  const prevFinal = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (finalScore !== prevFinal.current && finalRef.current) {
+      prevFinal.current = finalScore;
+      const el = finalRef.current;
+      el.classList.remove('score-number-pop');
+      void el.offsetWidth; // reflow
+      el.classList.add('score-number-pop');
+      setTimeout(() => el.classList.remove('score-number-pop'), 350);
+    }
+  }, [finalScore]);
 
   return (
     <div style={{
@@ -50,7 +64,7 @@ export function ScoreChain({ baseScore, handName, steps, finalScore, skimRate }:
         className="score-slam"
         style={{ color: '#fde68a', fontWeight: 700, fontSize: 22, display: 'inline-block' }}
       >
-        {finalScore}
+        <span ref={finalRef} style={{ display: 'inline-block' }}>{finalScore}</span>
       </span>
 
       {/* Split */}

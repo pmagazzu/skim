@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { Card } from './Card';
 import type { Card as CardType } from '../game/deck';
 import type { HandResult, HandRankValue } from '../game/hands';
 import { TurnPips } from './TurnPips';
+import { playSortClick } from '../audio/sounds';
 
 type SortMode = 'dealt' | 'high' | 'low' | 'suit';
 
@@ -57,6 +58,13 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
     { mode: 'suit',  label: 'Suit' },
   ];
 
+  const handleSortClick = useCallback((mode: SortMode, el: HTMLButtonElement) => {
+    playSortClick();
+    el.classList.add('btn-punch');
+    setTimeout(() => el.classList.remove('btn-punch'), 220);
+    onSortChange(mode);
+  }, [onSortChange]);
+
   return (
     <div className="flex flex-col items-center gap-4">
       {/* Sort controls */}
@@ -65,7 +73,7 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
         {SORT_OPTIONS.map(o => (
           <button
             key={o.mode}
-            onClick={() => onSortChange(o.mode)}
+            onClick={e => handleSortClick(o.mode, e.currentTarget as HTMLButtonElement)}
             style={{ fontFamily: "'VT323',monospace", fontSize: 15, padding: '4px 10px' }}
             className={[
               'rounded transition-all',

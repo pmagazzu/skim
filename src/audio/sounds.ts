@@ -78,49 +78,65 @@ const SELECT_PITCHES = [880, 920, 860, 940, 900, 980]; // slight variety per cli
 /** Card dealt — snappy paper tick */
 export function playCardDeal(index = 0) {
   setTimeout(() => {
-    playNoise(0.018, 0.5, 4000, 0.4);
+    playNoise(0.018, 0.5, 5000, 0.4);
     playBloop(320 + index * 12, 0.03, 'square', 0.18);
+    // tiny shimmer
+    setTimeout(() => playBloop(600, 0.025, 'sine', 0.08), 15);
   }, index * 35);
 }
 
-/** Card selected — bright punchy click with pitch variety */
+/** Card selected — slot machine lever ratchet */
 export function playCardSelect() {
   const freq = SELECT_PITCHES[_selectPitchIdx % SELECT_PITCHES.length];
   _selectPitchIdx++;
+  // Two rapid ratchet bursts 8ms apart
   playNoise(0.012, 0.7, 5000, 0.6);
+  setTimeout(() => playNoise(0.010, 0.55, 5800, 0.6), 8);
   playBloop(freq, 0.06, 'square', 0.55);
   setTimeout(() => playBloop(freq * 1.5, 0.04, 'sine', 0.18), 18);
 }
 
-/** Card deselected — snap-back thunk */
+/** Card deselected — satisfying snap-back thunk */
 export function playCardDeselect() {
-  playNoise(0.014, 0.5, 1800, 0.7);
-  playBloop(500, 0.05, 'square', 0.3);
+  // Lower freq thunk: 300Hz square
+  playBloop(300, 0.06, 'square', 0.4);
+  playNoise(0.018, 0.6, 1800, 0.7);
 }
 
 // ── Hand / action sounds ───────────────────────────────────────────────────
 
-/** Play Hand — big satisfying THWACK */
+/** Play Hand — big satisfying THWACK (3-layer massive) */
 export function playHandPlay() {
   try {
     const c = getCtx();
+    // Sub-bass hit: 60Hz sine
+    const sub = c.createOscillator();
+    const subGain = c.createGain();
+    sub.type = 'sine';
+    sub.frequency.value = 60;
+    subGain.gain.setValueAtTime(MASTER * 0.9, c.currentTime);
+    subGain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.15);
+    sub.connect(subGain);
+    subGain.connect(c.destination);
+    sub.start(c.currentTime);
+    sub.stop(c.currentTime + 0.18);
     // Impact noise burst
     playNoise(0.04, 1.2, 2000, 0.3);
     // Deep thud
     playThud(1.0, 90);
-    // Rising sweep
+    // Rising sweep 200→900Hz
     const osc = c.createOscillator();
     const gain = c.createGain();
     osc.type = 'square';
     osc.frequency.setValueAtTime(200, c.currentTime + 0.02);
-    osc.frequency.exponentialRampToValueAtTime(600, c.currentTime + 0.1);
+    osc.frequency.exponentialRampToValueAtTime(900, c.currentTime + 0.12);
     gain.gain.setValueAtTime(0, c.currentTime);
     gain.gain.setValueAtTime(MASTER * 0.5, c.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.18);
     osc.connect(gain);
     gain.connect(c.destination);
     osc.start(c.currentTime);
-    osc.stop(c.currentTime + 0.2);
+    osc.stop(c.currentTime + 0.22);
   } catch { /* silently fail */ }
 }
 
@@ -143,10 +159,40 @@ export function playDiscard() {
   } catch { /* silently fail */ }
 }
 
-/** Button press — mechanical click-clack */
+/** Button press — snappy two-layer with metallic shimmer */
 export function playButtonPress() {
-  playNoise(0.018, 0.9, 2500, 0.5);
-  playBloop(260, 0.035, 'square', 0.35);
+  playNoise(0.016, 1.0, 3000, 0.5);
+  playThud(0.5, 120);
+  setTimeout(() => playNoise(0.010, 0.4, 6000, 0.3), 30);
+}
+
+/** Big action punch — BUY, PLAY HAND */
+export function playButtonPunch() {
+  try {
+    const c = getCtx();
+    // Deep thud 80Hz
+    playThud(0.9, 80);
+    // High crack noise
+    playNoise(0.02, 1.0, 4500, 0.4);
+    // Rising bloop 400→700Hz
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(400, c.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(700, c.currentTime + 0.12);
+    gain.gain.setValueAtTime(MASTER * 0.55, c.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(c.destination);
+    osc.start(c.currentTime);
+    osc.stop(c.currentTime + 0.18);
+  } catch { /* silently fail */ }
+}
+
+/** Sort button mechanical click */
+export function playSortClick() {
+  playNoise(0.012, 0.7, 3500, 0.5);
+  playBloop(500, 0.018, 'square', 0.4);
 }
 
 // ── Scoring sounds ─────────────────────────────────────────────────────────
@@ -161,26 +207,35 @@ export function playVaultChunk() {
   );
 }
 
+const LEGENDARY_CHIPS = new Set(['DIAMOND', 'PLATINUM', 'MOONSTONE', 'JOKER', 'AURORA', 'ECHO']);
+
 /** Chip fire bloop — each chip has a distinct feel */
 export function playChipBloop(chipType: string) {
   const configs: Record<string, { freq: number; type: OscillatorType; vol: number; dur: number }> = {
-    RED:      { freq: 330, type: 'sawtooth', vol: 0.7, dur: 0.1  },
-    BLUE:     { freq: 520, type: 'square',   vol: 0.6, dur: 0.09 },
-    BLACK:    { freq: 180, type: 'square',   vol: 0.8, dur: 0.14 },
-    GOLD:     { freq: 660, type: 'sine',     vol: 0.7, dur: 0.13 },
-    LUCKY:    { freq: 780, type: 'sine',     vol: 0.6, dur: 0.12 },
-    SILVER:   { freq: 440, type: 'square',   vol: 0.6, dur: 0.1  },
-    DIAMOND:  { freq: 880, type: 'sine',     vol: 0.65, dur: 0.15 },
-    PLATINUM: { freq: 740, type: 'sine',     vol: 0.7, dur: 0.13 },
-    JOKER:    { freq: 550, type: 'sawtooth', vol: 0.65, dur: 0.11 },
-    PENNY:    { freq: 990, type: 'square',   vol: 0.55, dur: 0.07 },
+    RED:       { freq: 330, type: 'sawtooth', vol: 0.84, dur: 0.1  },
+    BLUE:      { freq: 520, type: 'square',   vol: 0.72, dur: 0.09 },
+    BLACK:     { freq: 180, type: 'square',   vol: 0.96, dur: 0.14 },
+    GOLD:      { freq: 660, type: 'sine',     vol: 0.84, dur: 0.13 },
+    LUCKY:     { freq: 780, type: 'sine',     vol: 0.72, dur: 0.12 },
+    SILVER:    { freq: 440, type: 'square',   vol: 0.72, dur: 0.1  },
+    DIAMOND:   { freq: 880, type: 'sine',     vol: 0.78, dur: 0.15 },
+    PLATINUM:  { freq: 740, type: 'sine',     vol: 0.84, dur: 0.13 },
+    JOKER:     { freq: 550, type: 'sawtooth', vol: 0.78, dur: 0.11 },
+    PENNY:     { freq: 990, type: 'square',   vol: 0.66, dur: 0.07 },
+    MOONSTONE: { freq: 820, type: 'sine',     vol: 0.78, dur: 0.14 },
+    AURORA:    { freq: 960, type: 'sine',     vol: 0.78, dur: 0.16 },
+    ECHO:      { freq: 700, type: 'sine',     vol: 0.72, dur: 0.13 },
   };
-  const cfg = configs[chipType] ?? { freq: 440, type: 'square' as OscillatorType, vol: 0.6, dur: 0.1 };
-  playNoise(0.01, 0.4, 3000, 0.6);
+  const cfg = configs[chipType] ?? { freq: 440, type: 'square' as OscillatorType, vol: 0.72, dur: 0.1 };
+  playNoise(0.01, 0.48, 3000, 0.6);
   playBloop(cfg.freq, cfg.dur, cfg.type, cfg.vol);
   // Overtone shimmer for fancy chips
-  if (['GOLD', 'DIAMOND', 'PLATINUM', 'LUCKY'].includes(chipType)) {
+  if (['GOLD', 'DIAMOND', 'PLATINUM', 'LUCKY', 'MOONSTONE', 'AURORA', 'ECHO'].includes(chipType)) {
     setTimeout(() => playBloop(cfg.freq * 2, cfg.dur * 0.6, 'sine', cfg.vol * 0.3), 25);
+  }
+  // Floor thud for legendary chips
+  if (LEGENDARY_CHIPS.has(chipType)) {
+    playThud(0.3, 120);
   }
 }
 

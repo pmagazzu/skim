@@ -103,6 +103,21 @@ export function Vault({ chips, target }: VaultProps) {
     return () => { if (tickRef.current) clearInterval(tickRef.current); };
   }, [chips]);
 
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const prevPct = useRef(0);
+
+  useEffect(() => {
+    const newPct = Math.min(1, chips / Math.max(1, target));
+    if (newPct !== prevPct.current && barRef.current) {
+      prevPct.current = newPct;
+      const el = barRef.current;
+      el.classList.remove('vault-fill-pulse');
+      void el.offsetWidth;
+      el.classList.add('vault-fill-pulse');
+      setTimeout(() => el.classList.remove('vault-fill-pulse'), 400);
+    }
+  }, [chips, target]);
+
   const activeColor  = full ? '#4ade80' : ticking ? '#fde68a' : '#f59e0b';
   const dimColor     = full ? '#052e16' : '#1c1007';
   const glowColor    = full ? 'rgba(74,222,128,0.5)' : ticking ? 'rgba(253,230,138,0.4)' : 'rgba(245,158,11,0.25)';
@@ -143,7 +158,7 @@ export function Vault({ chips, target }: VaultProps) {
 
       {/* Progress bar */}
       <div style={{ width: '100%', height: 5, background: '#1a1400', borderRadius: 3, overflow: 'hidden', border: '1px solid #2a2000' }}>
-        <div style={{
+        <div ref={barRef} style={{
           height: '100%', width: `${pct * 100}%`,
           background: barColor,
           borderRadius: 3,
