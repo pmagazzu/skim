@@ -177,7 +177,7 @@ export function Shop({
       <div className="flex items-center justify-between">
         <button onClick={() => { playButtonPress(); onViewDeck(); }} className="btn-secondary" style={{ fontSize: 12, padding: '6px 10px' }}>DECK {deckSize}</button>
         <div style={{ fontFamily: "'VT323',monospace", fontSize: 28, color: '#fbbf24' }}>💰 {personalChips.toLocaleString()}c</div>
-        <button onClick={() => { playButtonPress(); onEndShop(); }} className="btn-primary" style={{ fontSize: 13, padding: '7px 12px' }}>DONE →</button>
+        <button onClick={() => { playButtonPress(); onEndShop(); }} className="btn-primary" style={{ fontSize: 13, padding: '7px 12px' }}>CONTINUE →</button>
       </div>
 
       {/* Offer board */}
@@ -261,7 +261,7 @@ export function Shop({
         </div>
       )}
 
-      <SectionToggle title="Upgrades + Forge + Theme" open={openUpgrades} onClick={() => setOpenUpgrades(v => !v)} />
+      <SectionToggle title="Upgrades + Forge" open={openUpgrades} onClick={() => setOpenUpgrades(v => !v)} />
       {openUpgrades && (
         <div className="flex flex-col gap-2">
           {(Object.keys(UPGRADE_DEFS) as UpgradeTypeValue[]).slice(0, 4).map(key => {
@@ -290,16 +290,9 @@ export function Shop({
             ))}
           </div>
 
-          <div className="flex gap-2 justify-center">
-            <button onClick={() => onSetTheme('gold')} className={currentTheme === 'gold' ? 'btn-primary' : 'btn-secondary'} style={{ fontSize: 12, padding: '6px 10px' }}>🌙 DARK</button>
-            <button onClick={() => onSetTheme('smoke')} className={currentTheme === 'smoke' ? 'btn-primary' : 'btn-secondary'} style={{ fontSize: 12, padding: '6px 10px' }}>☀️ LIGHT</button>
-          </div>
         </div>
       )}
 
-      <button onClick={() => { playButtonPress(); onEndShop(); }} className="btn-primary w-full" style={{ fontSize: 16, padding: '12px 0' }}>
-        NEXT ROUND →
-      </button>
     </div>
   );
 }

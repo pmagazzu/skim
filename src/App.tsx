@@ -26,10 +26,12 @@ import { UpgradeType } from './game/gameState';
 type SortMode = 'dealt' | 'high' | 'low' | 'suit';
 
 // ── Menu panel overlay — triggered by inline MENU buttons ──
-function MenuPanel({ open, onClose, onDevWin, onCatalog, onTutorial, onMainMenu, musicVolume, onMusicVolume }: {
+function MenuPanel({ open, onClose, onDevWin, onCatalog, onTutorial, onMainMenu, musicVolume, onMusicVolume, theme, onTheme }: {
   open: boolean; onClose: () => void; onDevWin: () => void; onCatalog: () => void;
   onTutorial?: () => void; onMainMenu?: () => void;
   musicVolume?: number; onMusicVolume?: (v: number) => void;
+  theme?: 'gold' | 'neon' | 'blood' | 'ice' | 'smoke';
+  onTheme?: (t: 'gold' | 'smoke') => void;
 }) {
   if (!open) return null;
   return (
@@ -94,6 +96,12 @@ function MenuPanel({ open, onClose, onDevWin, onCatalog, onTutorial, onMainMenu,
                 onChange={e => onMusicVolume(parseFloat(e.target.value))}
                 style={{ flex: 1, accentColor: '#ca8a04' }}
               />
+            </div>
+          )}
+          {onTheme && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => { playButtonPress(); onTheme('gold'); }} className={theme === 'gold' ? 'btn-primary' : 'btn-secondary'} style={{ flex: 1, padding: '8px 0', fontSize: 12 }}>🌙 DARK</button>
+              <button onClick={() => { playButtonPress(); onTheme('smoke'); }} className={theme === 'smoke' ? 'btn-primary' : 'btn-secondary'} style={{ flex: 1, padding: '8px 0', fontSize: 12 }}>☀️ LIGHT</button>
             </div>
           )}
           <button
@@ -357,7 +365,7 @@ function App() {
           </div>
           <MenuButton onClick={() => setShowMenu(true)} />
         </div>
-        <MenuPanel open={showMenu} onClose={() => setShowMenu(false)} onDevWin={() => {}} onCatalog={() => setShowCatalog(true)} musicVolume={musicVolume} onMusicVolume={v => { setMusicVolume(v); musicManager.setVolume(v); }} />
+        <MenuPanel open={showMenu} onClose={() => setShowMenu(false)} onDevWin={() => {}} onCatalog={() => setShowCatalog(true)} musicVolume={musicVolume} onMusicVolume={v => { setMusicVolume(v); musicManager.setVolume(v); }} theme={state.theme} onTheme={t => dispatch({ type: 'SET_THEME', theme: t })} />
         {showCatalog && <DebugIndex onClose={() => setShowCatalog(false)} />}
       </div>
     );
@@ -852,6 +860,8 @@ function App() {
         onMainMenu={() => { dispatch({ type: 'RESET' }); setAppScreen('mainmenu'); }}
         musicVolume={musicVolume}
         onMusicVolume={v => { setMusicVolume(v); musicManager.setVolume(v); }}
+        theme={state.theme}
+        onTheme={t => dispatch({ type: 'SET_THEME', theme: t })}
       />
       {showCatalog && <DebugIndex onClose={() => setShowCatalog(false)} />}
       {state.forgeResult && (
