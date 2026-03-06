@@ -241,6 +241,8 @@ export interface GameState {
   handRerollCost: number;                      // current reroll cost (escalates per reroll)
   openedBooster: { boosterId: string; options: BoosterOption[] } | null;
   boosterRerollCost: number;
+  boosterOptionsCache: Record<string, BoosterOption[]>;
+  armedBoosters: string[];
 }
 
 export type GameAction =
@@ -696,6 +698,8 @@ export const initialState: GameState = {
   handRerollCost: 10,
   openedBooster: null,
   boosterRerollCost: 20,
+  boosterOptionsCache: {},
+  armedBoosters: [],
 };
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -996,6 +1000,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         chipStack: newStack,
         personalChips: state.personalChips + refund,
         shopItems: generateShop(state.consumables, newStack, state.round, state.ante, state.shopDiscount, state.purchasedUpgrades, state),
+        openedBooster: null,
+        boosterOptionsCache: {},
+        armedBoosters: [],
       };
     }
 
@@ -1036,6 +1043,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         shopDiscount: newDiscount,
         feltSkin: newFelt,
         shopItems: generateShop(state.consumables, state.chipStack, state.round, state.ante, newDiscount, newUpgrades, state),
+        openedBooster: null,
+        boosterOptionsCache: {},
+        armedBoosters: [],
       };
     }
 
@@ -1159,12 +1169,26 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'BUY_BOOSTER': {
       const itemId = action.type === 'BUY_ITEM' ? action.itemId : action.itemId;
       const item = state.shopItems.find(i => i.id === itemId);
-      if (!item || state.personalChips < item.cost || state.openedBooster) return state;
+      if (!item || state.openedBooster) return state;
+
+      // If booster was already purchased/opened this visit, reopen same options (no re-roll, no extra charge)
+      if (state.armedBoosters.includes(item.id)) {
+        const cached = state.boosterOptionsCache[item.id];
+        if (!cached || cached.length === 0) return state;
+        return {
+          ...state,
+          openedBooster: { boosterId: item.id, options: cached },
+        };
+      }
+
+      if (state.personalChips < item.cost) return state;
       const options = generateBoosterOptions(state, item);
       return {
         ...state,
         personalChips: state.personalChips - item.cost,
         openedBooster: { boosterId: item.id, options },
+        boosterOptionsCache: { ...state.boosterOptionsCache, [item.id]: options },
+        armedBoosters: [...state.armedBoosters, item.id],
       };
     }
 
@@ -1175,7 +1199,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!state.openedBooster || state.openedBooster.boosterId !== action.boosterId) return state;
       const pick = state.openedBooster.options.find(o => o.id === action.optionId);
       if (!pick) return state;
-      let next = { ...state, openedBooster: null, shopItems: state.shopItems.map(i => i.id === action.boosterId ? { ...i, cost: 0, subtitle: 'Sold' } : i) };
+      const nextCache = { ...state.boosterOptionsCache };
+      delete nextCache[action.boosterId];
+      let next = {
+        ...state,
+        openedBooster: null,
+        boosterOptionsCache: nextCache,
+        armedBoosters: state.armedBoosters.filter(id => id !== action.boosterId),
+        shopItems: state.shopItems.map(i => i.id === action.boosterId ? { ...i, cost: 0, subtitle: 'Sold' } : i),
+      };
       const maxChips = state.purchasedUpgrades.includes(UpgradeType.EXTRA_CHIP_SLOT) ? 6 : MAX_CHIPS;
 
       if (pick.kind === 'chip' && pick.chipType) {
@@ -1230,6 +1262,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         personalChips: state.personalChips - state.boosterRerollCost,
         boosterRerollCost: Math.ceil(state.boosterRerollCost * 1.7),
         shopItems: generateShop(state.consumables, state.chipStack, state.round, state.ante, state.shopDiscount, state.purchasedUpgrades, state),
+        openedBooster: null,
+        boosterOptionsCache: {},
+        armedBoosters: [],
       };
     }
 
@@ -1347,6 +1382,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         handRerollCost: 10,
         openedBooster: null,
         boosterRerollCost: 20,
+        boosterOptionsCache: {},
+        armedBoosters: [],
         roundHistory: [...state.roundHistory, result],
         activeBounties: resolvedBounties,
         availableBounties: newBounties,
