@@ -105,22 +105,31 @@ export function Shop({ items, personalChips, onBuy, onRerollBoosters, boosterRer
   const stableItems = snapshotRef.current.length > 0 ? snapshotRef.current : items;
   const liveById = new Map(items.map(i => [i.id, i]));
 
-  function buy(id: string) {
+  function punchButton(el?: HTMLButtonElement | null) {
+    if (!el) return;
+    el.classList.remove('btn-punch');
+    void el.offsetWidth;
+    el.classList.add('btn-punch');
+    setTimeout(() => el.classList.remove('btn-punch'), 190);
+  }
+
+  function buy(id: string, el?: HTMLButtonElement | null) {
+    punchButton(el);
     onBuy(id);
   }
 
   return (
     <div className="flex flex-col gap-3 p-3 w-full">
-      <div style={{ textAlign: 'center', fontFamily: "'Press Start 2P',monospace", fontSize: 16, color: '#fbbf24' }}>BOOSTER SHOP</div>
+      <div style={{ textAlign: 'center', fontFamily: "'Press Start 2P',monospace", fontSize: 16, color: 'var(--accent-bright)', textShadow: '0 0 10px var(--accent-glow)' }}>BOOSTER SHOP</div>
 
       <div className="flex items-center justify-between">
-        <button onClick={() => { playButtonPress(); onViewDeck(); }} className="btn-secondary" style={{ fontSize: 12, padding: '6px 10px' }}>DECK</button>
-        <div style={{ fontFamily: "'VT323',monospace", fontSize: 28, color: '#fbbf24' }}>💰 {personalChips.toLocaleString()}c</div>
-        <button onClick={() => { playButtonPress(); onEndShop(); }} className="btn-primary" style={{ fontSize: 13, padding: '7px 12px' }}>CONTINUE →</button>
+        <button onClick={(e) => { playButtonPress(); punchButton(e.currentTarget); onViewDeck(); }} className="btn-secondary" style={{ fontSize: 12, padding: '6px 10px' }}>DECK</button>
+        <div style={{ fontFamily: "'VT323',monospace", fontSize: 28, color: 'var(--accent-bright)', textShadow: '0 0 8px var(--accent-glow)' }}>💰 {personalChips.toLocaleString()}c</div>
+        <button onClick={(e) => { playButtonPress(); punchButton(e.currentTarget); onEndShop(); }} className="btn-primary" style={{ fontSize: 13, padding: '7px 12px' }}>CONTINUE →</button>
       </div>
 
       <button
-        onClick={personalChips >= boosterRerollCost ? () => { playButtonPress(); onRerollBoosters(); } : undefined}
+        onClick={personalChips >= boosterRerollCost ? (e) => { playButtonPress(); punchButton(e.currentTarget); onRerollBoosters(); } : undefined}
         disabled={personalChips < boosterRerollCost}
         className={personalChips >= boosterRerollCost ? 'btn-secondary' : 'btn-secondary opacity-40'}
         style={{ fontSize: 13, padding: '8px 0' }}
@@ -140,19 +149,19 @@ export function Shop({ items, personalChips, onBuy, onRerollBoosters, boosterRer
               <div className="flex items-center gap-3">
                 <FoilPack type={item.boosterType} sold={sold} />
                 <div className="flex-1 min-w-0">
-                  <div style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: '#f8d082', lineHeight: 1 }}>
+                  <div style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: 'var(--text-primary)', lineHeight: 1 }}>
                     {item.label}
                   </div>
-                  <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#9ca3af' }}>
+                  <div style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: sold ? 'var(--text-dim)' : 'color-mix(in srgb, var(--text-dim) 88%, white 12%)' }}>
                     {sold ? 'SOLD' : item.subtitle}
                   </div>
-                  <div style={{ fontFamily: "'VT323',monospace", color: '#6b7280', fontSize: 14, letterSpacing: '0.08em', marginTop: 2 }}>
+                  <div style={{ fontFamily: "'VT323',monospace", color: 'var(--text-dim)', fontSize: 14, letterSpacing: '0.08em', marginTop: 2 }}>
                     {item.rarity.toUpperCase()}
                   </div>
                   <div className="mt-2 flex items-center justify-between">
-                    <span style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: '#fbbf24' }}>{sold ? '—' : `${effectiveCost}c`}</span>
+                    <span style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: 'var(--accent-bright)', textShadow: '0 0 8px var(--accent-glow)' }}>{sold ? '—' : `${effectiveCost}c`}</span>
                     <button
-                      onClick={canBuy ? () => { playButtonPunch(); buy(item.id); } : undefined}
+                      onClick={canBuy ? (e) => { playButtonPunch(); buy(item.id, e.currentTarget); } : undefined}
                       disabled={!canBuy}
                       className={canBuy ? 'btn-primary' : 'btn-secondary opacity-40'}
                       style={{ fontSize: 14, padding: '6px 14px' }}

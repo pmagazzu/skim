@@ -26,11 +26,11 @@ button, [role="button"], a {
   --accent-bright: #ffd166;
   --accent-glow: rgba(245,158,11,0.65);
   --text-primary: #f8eecf;
-  --text-dim: #d4b888;
+  --text-dim: #c4a878;
   --border: #6a5530;
-  --scanline-opacity: 0.06;
-  --panel-bg: rgba(10,8,5,0.65);
-  --panel-border: rgba(255,255,255,0.06);
+  --scanline-opacity: 0.055;
+  --panel-bg: rgba(10,8,5,0.68);
+  --panel-border: rgba(255,255,255,0.07);
 }
 
 /* Neon: Cyberpunk — dark navy, cyan/purple */
@@ -96,12 +96,12 @@ button, [role="button"], a {
   --accent: #c46b04;
   --accent-bright: #e88e10;
   --accent-glow: rgba(196,107,4,0.40);
-  --text-primary: #1e150a;
-  --text-dim: #5a3d1e;
+  --text-primary: #20160a;
+  --text-dim: #624325;
   --border: #a8905e;
-  --scanline-opacity: 0.025;
-  --panel-bg: rgba(180,160,130,0.18);
-  --panel-border: rgba(0,0,0,0.08);
+  --scanline-opacity: 0.02;
+  --panel-bg: rgba(178,152,116,0.2);
+  --panel-border: rgba(0,0,0,0.1);
 }
 
 * { box-sizing: border-box; }
@@ -300,23 +300,24 @@ body::after {
   background: linear-gradient(145deg, #fdfaf3, #f0ead8);
   border: 1px solid #d4c9a8;
   box-shadow: 0 2px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.8);
-  transition: transform 0.08s cubic-bezier(0.34, 1.56, 0.64, 1),
-              box-shadow 0.08s ease,
-              filter 0.08s ease;
+  transition: transform 110ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 110ms ease,
+              filter 110ms ease;
+  will-change: transform;
 }
 .card-face:not(.card-selected):hover {
-  transform: translateY(-5px) scale(1.04);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.8);
-  filter: brightness(1.04);
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.8);
+  filter: brightness(1.06);
   z-index: 2;
 }
 
 .card-selected {
-  transform: translateY(-16px) scale(1.09);
-  box-shadow: 0 0 0 3px #fff,
-              0 0 18px rgba(255,255,255,0.65),
-              0 -14px 22px rgba(255,215,0,0.35);
-  animation: card-select-spring 0.20s cubic-bezier(0.34, 2.2, 0.64, 1) both;
+  transform: translateY(-15px) scale(1.08);
+  box-shadow: 0 0 0 2px #fff,
+              0 0 20px rgba(255,255,255,0.6),
+              0 -10px 26px rgba(255,215,0,0.3);
+  animation: card-select-spring 220ms cubic-bezier(0.34, 2.2, 0.64, 1) both;
 }
 
 @keyframes card-select-spring {
@@ -437,32 +438,33 @@ body::after {
   font-size: 0.8rem;
   cursor: pointer;
   touch-action: manipulation;
-  box-shadow: 0 5px 0 color-mix(in srgb, var(--accent) 60%, black),
-              0 4px 14px var(--accent-glow),
-              0 0 18px var(--accent-glow),
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 62%, black),
+              0 5px 16px var(--accent-glow),
+              0 0 22px color-mix(in srgb, var(--accent-glow) 85%, transparent),
               inset 0 1px 0 rgba(255,255,255,0.35);
-  transition: transform 0.08s cubic-bezier(0.34,1.4,0.64,1), box-shadow 0.08s ease, filter 0.08s ease;
+  transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 120ms ease, filter 120ms ease;
   position: relative;
   top: 0;
+  will-change: transform;
 }
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--accent-bright), color-mix(in srgb, var(--accent-bright) 80%, white));
-  box-shadow: 0 6px 0 color-mix(in srgb, var(--accent) 60%, black),
-              0 6px 22px var(--accent-glow),
-              0 0 32px var(--accent-glow),
-              inset 0 1px 0 rgba(255,255,255,0.4);
-  transform: translateY(-2px) scale(1.02);
+  background: linear-gradient(135deg, var(--accent-bright), color-mix(in srgb, var(--accent-bright) 82%, white));
+  box-shadow: 0 6px 0 color-mix(in srgb, var(--accent) 62%, black),
+              0 10px 26px var(--accent-glow),
+              0 0 36px color-mix(in srgb, var(--accent-glow) 95%, transparent),
+              inset 0 1px 0 rgba(255,255,255,0.42);
+  transform: translateY(-2px) scale(1.018);
   top: -2px;
-  filter: brightness(1.08);
+  filter: brightness(1.1);
 }
 .btn-primary:active:not(:disabled) {
-  transform: translateY(4px) scale(0.97);
-  top: 4px;
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 60%, black),
-              0 2px 6px var(--accent-glow),
-              inset 0 2px 4px rgba(0,0,0,0.25);
-  filter: brightness(0.95);
-  transition: transform 0.04s, box-shadow 0.04s, filter 0.04s;
+  transform: translateY(3px) scale(0.982);
+  top: 3px;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 62%, black),
+              0 3px 8px color-mix(in srgb, var(--accent-glow) 70%, transparent),
+              inset 0 2px 5px rgba(0,0,0,0.22);
+  filter: brightness(0.97);
+  transition: transform 60ms, box-shadow 60ms, filter 60ms;
 }
 .btn-primary:disabled {
   background: #2a2320;
@@ -474,33 +476,33 @@ body::after {
 }
 
 .btn-secondary {
-  background: rgba(255,255,255,0.05);
-  color: #9a8a72;
+  background: rgba(255,255,255,0.06);
+  color: var(--text-dim);
   font-family: 'Press Start 2P', monospace;
   font-size: 0.7rem;
   letter-spacing: 0.05em;
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.14);
   border-radius: 0.5rem;
   padding: 0.55rem 1.2rem;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 0.08s cubic-bezier(0.34,1.4,0.64,1), box-shadow 0.08s ease, background 0.1s, color 0.1s, border-color 0.1s;
+  transition: transform 110ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 110ms ease, background 110ms, color 110ms, border-color 110ms;
   box-shadow: 0 2px 0 rgba(0,0,0,0.4);
   position: relative;
   top: 0;
 }
 .btn-secondary:hover {
-  background: rgba(255,255,255,0.1);
-  color: #c8b89a;
-  border-color: rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.12);
+  color: var(--text-primary);
+  border-color: rgba(255,255,255,0.26);
   transform: translateY(-1px) scale(1.01);
   top: -1px;
 }
 .btn-secondary:active {
-  transform: translateY(2px) scale(0.97);
+  transform: translateY(2px) scale(0.985);
   top: 2px;
-  box-shadow: none;
-  transition: transform 0.04s, box-shadow 0.04s;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.25);
+  transition: transform 60ms, box-shadow 60ms;
 }
 
 /* Score popup */
@@ -729,24 +731,26 @@ body::before {
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   padding: 1rem;
-  transition: border-color 0.1s, box-shadow 0.1s, transform 0.1s cubic-bezier(0.34,1.4,0.64,1);
+  transition: border-color 130ms ease, box-shadow 130ms ease, transform 130ms cubic-bezier(0.22, 1, 0.36, 1), filter 130ms ease;
   cursor: pointer;
   font-size: 1rem;
+  will-change: transform;
 }
 .shop-card:hover {
-  border-color: #8a6e4a;
-  transform: translateY(-3px) scale(1.018);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.6), inset 0 0 12px rgba(255,255,255,0.02);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  transform: translateY(-2px) scale(1.014);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.52), inset 0 0 12px rgba(255,255,255,0.03);
+  filter: brightness(1.03);
 }
 .shop-card-rare:hover {
-  box-shadow: 0 8px 24px rgba(0,0,0,0.6), inset 0 0 20px rgba(168,85,247,0.2);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.5), inset 0 0 22px rgba(168,85,247,0.2);
 }
 .shop-card-legendary:hover {
-  box-shadow: 0 8px 24px rgba(0,0,0,0.6), inset 0 0 24px rgba(253,224,71,0.2);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.5), inset 0 0 26px rgba(253,224,71,0.22);
 }
 .shop-card:active {
-  transform: translateY(1px) scale(0.97);
-  transition: transform 0.04s;
+  transform: translateY(1px) scale(0.985);
+  transition: transform 60ms;
 }
 
 @keyframes rarity-pulse-uncommon {
@@ -872,10 +876,27 @@ body::before {
   40%  { opacity: 0.8; transform: scaleX(1.03); filter: brightness(1.5); }
   100% { opacity: 1; transform: scaleX(1); filter: brightness(1); }
 }
-.score-step-in   { animation: score-step-in 130ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-.score-slam      { animation: score-slam 380ms cubic-bezier(0.34, 1.7, 0.64, 1) both; }
-.chip-fired      { animation: chip-fired 360ms cubic-bezier(0.34, 1.4, 0.64, 1); }
-.deal-in         { animation: deal-in 0.16s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-.btn-punch       { animation: btn-punch 0.20s cubic-bezier(0.34, 2.0, 0.64, 1); }
-.score-number-pop { animation: score-number-pop 0.30s cubic-bezier(0.34, 1.8, 0.64, 1); }
-.vault-fill-pulse { animation: vault-fill-pulse 0.35s cubic-bezier(0.34, 1.2, 0.64, 1); }
+.score-step-in    { animation: score-step-in 120ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.score-slam       { animation: score-slam 320ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.chip-fired       { animation: chip-fired 300ms cubic-bezier(0.22, 1, 0.36, 1); }
+.deal-in          { animation: deal-in 140ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.btn-punch        { animation: btn-punch 180ms cubic-bezier(0.34, 2.0, 0.64, 1); }
+.score-number-pop { animation: score-number-pop 240ms cubic-bezier(0.34, 1.8, 0.64, 1); }
+.vault-fill-pulse { animation: vault-fill-pulse 280ms cubic-bezier(0.34, 1.2, 0.64, 1); }
+
+@media (max-width: 640px) {
+  .btn-primary:hover:not(:disabled),
+  .btn-secondary:hover,
+  .shop-card:hover,
+  .card-face:not(.card-selected):hover {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
