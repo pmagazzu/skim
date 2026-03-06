@@ -80,8 +80,8 @@ export function BoosterOpenModal({ booster, options, onPick, onDismiss }: Booste
                 key={opt.id}
                 onClick={show ? () => { playBoosterPick(); onPick(opt.id); } : undefined}
                 disabled={!show}
-                className={show ? 'shop-card text-left' : 'shop-card opacity-30 text-left'}
-                style={{ transition: 'all 0.2s ease', minHeight: 72 }}
+                className={show ? 'shop-card text-left deal-in' : 'shop-card opacity-30 text-left'}
+                style={{ transition: 'transform 0.1s cubic-bezier(0.34,1.4,0.64,1), box-shadow 0.1s, border-color 0.1s', minHeight: 72, animationDelay: `${i * 120}ms` }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

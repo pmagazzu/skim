@@ -6,7 +6,7 @@ function getCtx(): AudioContext {
   return ctx;
 }
 
-const MASTER = 0.22; // nudged up slightly for punchiness
+const MASTER = 0.25; // balanced for punchiness without clipping
 
 // ── Primitives ─────────────────────────────────────────────────────────────
 
@@ -89,11 +89,11 @@ export function playCardDeal(index = 0) {
 export function playCardSelect() {
   const freq = SELECT_PITCHES[_selectPitchIdx % SELECT_PITCHES.length];
   _selectPitchIdx++;
-  // Two rapid ratchet bursts 8ms apart
-  playNoise(0.012, 0.7, 5000, 0.6);
-  setTimeout(() => playNoise(0.010, 0.55, 5800, 0.6), 8);
-  playBloop(freq, 0.06, 'square', 0.55);
-  setTimeout(() => playBloop(freq * 1.5, 0.04, 'sine', 0.18), 18);
+  // Two rapid ratchet bursts 6ms apart — snappier
+  playNoise(0.010, 0.75, 5200, 0.6);
+  setTimeout(() => playNoise(0.008, 0.6, 6000, 0.6), 6);
+  playBloop(freq, 0.05, 'square', 0.6);
+  setTimeout(() => playBloop(freq * 1.5, 0.035, 'sine', 0.22), 14);
 }
 
 /** Card deselected — satisfying snap-back thunk */
@@ -170,22 +170,22 @@ export function playButtonPress() {
 export function playButtonPunch() {
   try {
     const c = getCtx();
-    // Deep thud 80Hz
-    playThud(0.9, 80);
-    // High crack noise
-    playNoise(0.02, 1.0, 4500, 0.4);
-    // Rising bloop 400→700Hz
+    // Deep thud 80Hz — immediate
+    playThud(1.0, 80);
+    // High crack noise — sharper transient
+    playNoise(0.015, 1.1, 4800, 0.4);
+    // Rising bloop 400→750Hz — tighter
     const osc = c.createOscillator();
     const gain = c.createGain();
     osc.type = 'square';
-    osc.frequency.setValueAtTime(400, c.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(700, c.currentTime + 0.12);
-    gain.gain.setValueAtTime(MASTER * 0.55, c.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.15);
+    osc.frequency.setValueAtTime(420, c.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(750, c.currentTime + 0.10);
+    gain.gain.setValueAtTime(MASTER * 0.6, c.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.13);
     osc.connect(gain);
     gain.connect(c.destination);
     osc.start(c.currentTime);
-    osc.stop(c.currentTime + 0.18);
+    osc.stop(c.currentTime + 0.15);
   } catch { /* silently fail */ }
 }
 
@@ -199,10 +199,10 @@ export function playSortClick() {
 
 /** Vault chunk — satisfying coin clinks */
 export function playVaultChunk() {
-  [0, 25, 55].forEach((ms, i) =>
+  [0, 20, 45].forEach((ms, i) =>
     setTimeout(() => {
-      playNoise(0.035, 0.8, 4500 - i * 400, 0.4);
-      playBloop(440 + i * 110, 0.09, 'sine', 0.45);
+      playNoise(0.030, 0.85, 4800 - i * 350, 0.4);
+      playBloop(460 + i * 120, 0.08, 'sine', 0.50);
     }, ms)
   );
 }

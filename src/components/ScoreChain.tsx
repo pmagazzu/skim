@@ -34,7 +34,7 @@ export function ScoreChain({ baseScore, handName, steps, finalScore, skimRate }:
   }, [finalScore]);
 
   return (
-    <div style={{
+    <div className="score-chain-bg" style={{
       display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 8px',
       padding: '8px 12px', borderRadius: 8,
       background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.05)',
