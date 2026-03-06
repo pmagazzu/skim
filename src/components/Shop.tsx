@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { ShopItem, UpgradeTypeValue } from '../game/gameState';
 import { UPGRADE_DEFS } from '../game/gameState';
 import type { Bounty } from '../game/bounties';
@@ -53,8 +53,8 @@ function RarityBadge({ rarity }: { rarity?: string }) {
   return <span className={`text-sm font-bold ${color}`}>{label}</span>;
 }
 
-function ShopCard({ item, canBuy, full, onBuy, lowCardCount = 0 }: {
-  item: ShopItem; canBuy: boolean; full: boolean; onBuy: () => void; lowCardCount?: number;
+function ShopCard({ item, canBuy, full, sold, onBuy, lowCardCount = 0 }: {
+  item: ShopItem; canBuy: boolean; full: boolean; sold?: boolean; onBuy: () => void; lowCardCount?: number;
 }) {
   const rarityGlow =
     item.rarity === 'legendary' ? 'shop-card-legendary' :
@@ -65,6 +65,14 @@ function ShopCard({ item, canBuy, full, onBuy, lowCardCount = 0 }: {
   const icon = item.type === 'consumable' && item.consumableType
     ? CONSUMABLE_ICONS[item.consumableType] ?? '🎴'
     : isPack ? null : '📈';
+  if (sold) {
+    return (
+      <div className="shop-card flex items-center justify-center" style={{ opacity: 0.3, minHeight: 80 }}>
+        <span style={{ fontFamily: "'VT323',monospace", fontSize: 20, color: '#4b5563', letterSpacing: '0.1em' }}>SOLD</span>
+      </div>
+    );
+  }
+
   return (
     <div className={['shop-card flex flex-col gap-2', rarityGlow].join(' ')}>
       <div className="flex items-start justify-between gap-1">
@@ -196,10 +204,38 @@ export function Shop({
   onBuy, onAcceptBounty, onSellChip, onBuyUpgrade, onBuyHandUpgrade, onRerollHandUpgrades, onBuyForge, currentTheme, onSetTheme, onViewDeck, onEndShop,
 }: ShopProps) {
   const [tab, setTab] = useState<ShopTab>('chips');
+  const [soldIds, setSoldIds] = useState<Set<string>>(new Set());
 
-  const chipItems    = items.filter(i => i.type === 'chip');
-  const casinoItems  = items.filter(i => i.type === 'consumable' || i.type === 'skim-upgrade');
-  const packItems    = items.filter(i => i.type === 'pack');
+  // Snapshot items on shop open (new set of item IDs = new shop visit)
+  const snapshotRef = useRef<ShopItem[]>([]);
+  const snapshotKeyRef = useRef<string>('');
+  const currentKey = items.map(i => i.id).sort().join(',');
+  if (currentKey !== snapshotKeyRef.current && items.length > 0) {
+    snapshotRef.current = items;
+    snapshotKeyRef.current = currentKey;
+    // Reset sold tracking on new shop
+  }
+  useEffect(() => {
+    if (items.length > 0) {
+      const key = items.map(i => i.id).sort().join(',');
+      if (key !== snapshotKeyRef.current) {
+        setSoldIds(new Set());
+      }
+    }
+  }, [currentKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Use stable snapshot for rendering; live `items` only for affordability check
+  const stableItems = snapshotRef.current.length > 0 ? snapshotRef.current : items;
+  const liveIds = new Set(items.map(i => i.id));
+
+  function handleBuy(id: string) {
+    setSoldIds(prev => new Set([...prev, id]));
+    onBuy(id);
+  }
+
+  const chipItems    = stableItems.filter(i => i.type === 'chip');
+  const casinoItems  = stableItems.filter(i => i.type === 'consumable' || i.type === 'skim-upgrade');
+  const packItems    = stableItems.filter(i => i.type === 'pack');
 
   return (
     <div className="flex flex-col gap-4 p-3 w-full" style={{ overflowY: 'visible' }}>
@@ -250,9 +286,10 @@ export function Shop({
       {tab === 'chips' && (
         <div className="grid grid-cols-2 gap-3">
           {chipItems.map(item => {
+            const isSold = soldIds.has(item.id) || !liveIds.has(item.id);
             const full = chipCount >= maxChips;
-            const canBuy = personalChips >= item.cost && !full;
-            return <ShopCard key={item.id} item={item} canBuy={canBuy} full={full} onBuy={() => onBuy(item.id)} />;
+            const canBuy = !isSold && personalChips >= item.cost && !full;
+            return <ShopCard key={item.id} item={item} canBuy={canBuy} full={full} sold={isSold} onBuy={() => handleBuy(item.id)} />;
           })}
         </div>
       )}
@@ -261,9 +298,10 @@ export function Shop({
       {tab === 'casino' && (
         <div className="flex flex-col gap-3">
           {casinoItems.map(item => {
+            const isSold = soldIds.has(item.id) || !liveIds.has(item.id);
             const full = item.type === 'consumable' && consumableCount >= 4;
-            const canBuy = personalChips >= item.cost && !full;
-            return <ShopCard key={item.id} item={item} canBuy={canBuy} full={full} onBuy={() => onBuy(item.id)} />;
+            const canBuy = !isSold && personalChips >= item.cost && !full;
+            return <ShopCard key={item.id} item={item} canBuy={canBuy} full={full} sold={isSold} onBuy={() => handleBuy(item.id)} />;
           })}
         </div>
       )}
@@ -272,8 +310,9 @@ export function Shop({
       {tab === 'deck' && (
         <div className="flex flex-col gap-3">
           {packItems.map(item => {
-            const canBuy = personalChips >= item.cost;
-            return <ShopCard key={item.id} item={item} canBuy={canBuy} full={false} onBuy={() => onBuy(item.id)} lowCardCount={lowCardCount} />;
+            const isSold = soldIds.has(item.id) || !liveIds.has(item.id);
+            const canBuy = !isSold && personalChips >= item.cost;
+            return <ShopCard key={item.id} item={item} canBuy={canBuy} full={false} sold={isSold} onBuy={() => handleBuy(item.id)} lowCardCount={lowCardCount} />;
           })}
           {packItems.length === 0 && <div className="text-gray-600 text-sm text-center py-4">No packs available this round.</div>}
         </div>
