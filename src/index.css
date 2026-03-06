@@ -14,20 +14,20 @@ button, [role="button"], a {
 /* Default: Casino Gold — dark amber, green felt */
 :root,
 [data-theme="gold"] {
-  /* DARK retro-tan (Arc Raiders-ish) */
-  --bg: #12100d;
-  --felt: #1b1712;
-  --felt-border: #3a2f22;
-  --gold: #c6a16b;
-  --gold-bright: #efd2a4;
-  --red: #c0654b;
-  --card-bg: #f5eee2;
-  --accent: #b8874f;
-  --accent-bright: #d8a56b;
-  --accent-glow: rgba(184,135,79,0.45);
-  --text-primary: #e9dbc4;
-  --text-dim: #8f7a5e;
-  --border: #4b3a2a;
+  /* DARK vibrant (Balatro-ish) */
+  --bg: #0e0a14;
+  --felt: #1a2f23;
+  --felt-border: #2e5a43;
+  --gold: #ffcc4d;
+  --gold-bright: #ffe48a;
+  --red: #ff4d6d;
+  --card-bg: #faf4e8;
+  --accent: #f59e0b;
+  --accent-bright: #ffd166;
+  --accent-glow: rgba(245,158,11,0.65);
+  --text-primary: #f8eecf;
+  --text-dim: #b39a6b;
+  --border: #5a4729;
   --scanline-opacity: 0.06;
 }
 
@@ -82,22 +82,22 @@ button, [role="button"], a {
   --border: #154060;
 }
 
-/* Light retro-tan */
+/* Light vibrant parchment */
 [data-theme="smoke"] {
-  --bg: #e8decd;
-  --felt: #d8c9b2;
-  --felt-border: #bca687;
-  --gold: #8a6236;
-  --gold-bright: #b8874f;
-  --red: #a25540;
+  --bg: #f7eedc;
+  --felt: #e9dbc2;
+  --felt-border: #c8af86;
+  --gold: #8a4f12;
+  --gold-bright: #c97717;
+  --red: #c2410c;
   --card-bg: #fffaf1;
-  --accent: #9b6e3f;
-  --accent-bright: #c79258;
-  --accent-glow: rgba(155,110,63,0.28);
-  --text-primary: #2b2116;
-  --text-dim: #6d5840;
-  --border: #b79f81;
-  --scanline-opacity: 0.018;
+  --accent: #d97706;
+  --accent-bright: #f59e0b;
+  --accent-glow: rgba(217,119,6,0.35);
+  --text-primary: #2c1f10;
+  --text-dim: #6b4b2a;
+  --border: #c7ab7e;
+  --scanline-opacity: 0.012;
 }
 
 * { box-sizing: border-box; }
