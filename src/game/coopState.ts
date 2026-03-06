@@ -46,7 +46,7 @@ export function makeInitialCoopState(roomCode: string, myPlayerIndex: 0 | 1): Co
     roundInAnte: 1,
     handsPlayedThisRound: 0,
     maxHandsPerRound: HANDS_PER_PLAYER * 2,
-    bounties: generateBounties(1),
+    bounties: generateBounties(1) as Bounty[],
     shopItems: [],
     phase: 'lobby',
     players: [player0, null],
@@ -306,7 +306,7 @@ export function coopReducer(state: CoopGameState, action: CoopAction): CoopGameS
         roundInAnte: 1,
         round: nextRound,
         vaultTarget: calcVaultTarget(nextAnte, 1),
-        bounties: generateBounties(nextRound),
+        bounties: generateBounties(nextRound) as Bounty[],
       };
     }
     return {
@@ -315,7 +315,7 @@ export function coopReducer(state: CoopGameState, action: CoopAction): CoopGameS
       round: nextRound,
       roundInAnte: nextRoundInAnte,
       vaultTarget: calcVaultTarget(state.ante, nextRoundInAnte),
-      bounties: generateBounties(nextRound),
+      bounties: generateBounties(nextRound) as Bounty[],
     };
   }
 

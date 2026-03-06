@@ -1,5 +1,6 @@
 import type { HandRankValue } from './hands';
 import { HandRank } from './hands';
+import { nextInt, shuffleWithRng } from './rng';
 
 export const BountyCondition = {
   PLAY_HAND_RANK:     'PLAY_HAND_RANK',     // play a hand of X rank or better
@@ -138,12 +139,24 @@ export const BOUNTY_POOL: Omit<Bounty, 'id' | 'accepted' | 'completed'>[] = [
   },
 ];
 
-export function generateBounties(round: number): Bounty[] {
+export function generateBounties(round: number, rngState?: number): Bounty[] | { bounties: Bounty[]; rngState: number } {
   const pool = round === 1
     ? BOUNTY_POOL.filter(b => b.condition !== BountyCondition.PLAY_HAND_RANK || b.conditionValue <= HandRank.FLUSH)
     : BOUNTY_POOL;
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 3).map((b, i) => ({ ...b, id: `bounty-${round}-${i}-${Math.random().toString(36).slice(2)}`, accepted: false, completed: false }));
+
+  if (rngState === undefined) {
+    const fallback = shuffleWithRng(Date.now() >>> 0, pool).value;
+    return fallback.slice(0, 3).map((b, i) => ({ ...b, id: `bounty-${round}-${i}-${Date.now()}-${i}`, accepted: false, completed: false }));
+  }
+
+  const shuffled = shuffleWithRng(rngState, pool);
+  let s = shuffled.state;
+  const selected = shuffled.value.slice(0, 3).map((b, i) => {
+    const token = nextInt(s, 0x7fffffff);
+    s = token.state;
+    return { ...b, id: `bounty-${round}-${i}-${token.value.toString(36)}`, accepted: false, completed: false };
+  });
+  return { bounties: selected, rngState: s };
 }
 
 export function checkBountyCondition(

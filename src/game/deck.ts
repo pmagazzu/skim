@@ -1,3 +1,5 @@
+import { nextInt } from './rng';
+
 export type Suit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
 
 export const CardModifier = {
@@ -69,12 +71,19 @@ export function createDeck(): Card[] {
 }
 
 export function shuffle(deck: Card[]): Card[] {
+  // Legacy non-seeded entrypoint retained for non-run contexts.
+  return shuffleSeeded(deck, Date.now() >>> 0).deck;
+}
+
+export function shuffleSeeded(deck: Card[], rngState: number): { deck: Card[]; rngState: number } {
   const d = [...deck];
+  let s = rngState;
   for (let i = d.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [d[i], d[j]] = [d[j], d[i]];
+    const j = nextInt(s, i + 1);
+    s = j.state;
+    [d[i], d[j.value]] = [d[j.value], d[i]];
   }
-  return d;
+  return { deck: d, rngState: s };
 }
 
 export function rankName(rank: number): string {

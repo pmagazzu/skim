@@ -5,11 +5,10 @@ import { RouletteWheel } from './RouletteWheel';
 
 const RED_NUMBERS = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 
-
 interface ConsumablesProps {
   held: ConsumableTypeValue[];
   onUse: (type: ConsumableTypeValue) => void;
-  onRouletteBet: (amount: number) => void;
+  onRouletteSpin: (payload: { betAmount: number; betType: 'red' | 'black' | 'number'; pickedNumbers: number[] }) => void;
   disabled?: boolean;
   scratchMultiplier: number;
   lastRouletteResult?: { win: boolean; number: number } | null;
@@ -17,7 +16,7 @@ interface ConsumablesProps {
   unlockedSlots?: number; // default 2
 }
 
-export function Consumables({ held, onUse, onRouletteBet, disabled, scratchMultiplier, vertical, unlockedSlots = 2 }: ConsumablesProps) {
+export function Consumables({ held, onUse, onRouletteSpin, disabled, scratchMultiplier, vertical, unlockedSlots = 2 }: ConsumablesProps) {
   const [rouletteOpen, setRouletteOpen] = useState(false);
   const [betAmount, setBetAmount] = useState(20);
   const [betType, setBetType] = useState<'red' | 'black' | 'number' | null>(null);
@@ -51,31 +50,14 @@ export function Consumables({ held, onUse, onRouletteBet, disabled, scratchMulti
   function handleRoulette() {
     if (!betType) return;
     if (betType === 'number' && pickedNumbers.size === 0) return;
-    const result = Math.floor(Math.random() * 37); // 0-36
-    setWinningNumber(result);
+    setWinningNumber(null);
     setSpinning(true);
 
-    let win = false;
-    let effectiveAmount = -betAmount;
-
-    if (betType === 'red') {
-      win = RED_NUMBERS.has(result);
-      effectiveAmount = win ? betAmount : -betAmount;
-    } else if (betType === 'black') {
-      win = result !== 0 && !RED_NUMBERS.has(result);
-      effectiveAmount = win ? betAmount : -betAmount;
-    } else if (betType === 'number') {
-      win = pickedNumbers.has(result);
-      // Win pays 35× the split bet, lose only the split amount on that number
-      effectiveAmount = win ? splitBet * 35 : -betAmount;
-    }
-
-    // After spin completes, show result — don't auto-close
     setTimeout(() => {
       onUse(ConsumableType.ROULETTE);
-      onRouletteBet(effectiveAmount);
+      onRouletteSpin({ betAmount, betType, pickedNumbers: Array.from(pickedNumbers) });
       setSpinning(false);
-      setRouletteResult({ win, amount: Math.abs(effectiveAmount) });
+      setRouletteResult(null);
     }, 3000);
   }
 

@@ -1,3 +1,5 @@
+import { nextFloat, nextInt, pickOne } from './rng';
+
 export const ChipRarity = {
   COMMON:    'common',
   UNCOMMON:  'uncommon',
@@ -21,26 +23,27 @@ export const RARITY_COLORS: Record<ChipRarityValue, string> = {
   legendary: 'text-yellow-300',
 };
 
-export function rollRarity(ante: number): ChipRarityValue {
-  const r = Math.random() * 100;
+export function rollRarity(ante: number, rngState?: number): ChipRarityValue | { rarity: ChipRarityValue; rngState: number } {
+  const draw = nextFloat(rngState ?? (Date.now() >>> 0));
+  const r = draw.value * 100;
+  let rarity: ChipRarityValue;
   if (ante === 1) {
-    // Ante 1: no legendaries, mostly common
-    if (r < 60) return 'common';
-    if (r < 88) return 'uncommon';
-    return 'rare';
+    if (r < 60) rarity = 'common';
+    else if (r < 88) rarity = 'uncommon';
+    else rarity = 'rare';
+  } else if (ante === 2) {
+    if (r < 45) rarity = 'common';
+    else if (r < 72) rarity = 'uncommon';
+    else if (r < 93) rarity = 'rare';
+    else rarity = 'legendary';
+  } else {
+    if (r < 30) rarity = 'common';
+    else if (r < 60) rarity = 'uncommon';
+    else if (r < 85) rarity = 'rare';
+    else rarity = 'legendary';
   }
-  if (ante === 2) {
-    // Ante 2: rare legendaries appear
-    if (r < 45) return 'common';
-    if (r < 72) return 'uncommon';
-    if (r < 93) return 'rare';
-    return 'legendary';
-  }
-  // Ante 3+: legendaries more accessible
-  if (r < 30) return 'common';
-  if (r < 60) return 'uncommon';
-  if (r < 85) return 'rare';
-  return 'legendary';
+  if (rngState === undefined) return rarity;
+  return { rarity, rngState: draw.state };
 }
 
 export const ChipType = {
@@ -607,6 +610,7 @@ export interface ChainResult {
   vaultBonus: number;
   diamondActive: boolean;
   skimPenalty: number;  // added by QUARTZ — permanent skim rate increase
+  rngState?: number;
 }
 
 // Apply chips sequentially — order matters!
@@ -627,19 +631,27 @@ export function applyChipsSequential(
   allRed = false,
   _maxHandsThisRound = 8,
   scratchMultiplier = 1,
-  uniqueSuitCount = 1,     // number of unique suits in selected hand (for PRISM)
-  faceCardCount = 0,       // J/Q/K count in played hand (for FLINT)
-  aceCount = 0,            // Aces in played hand (for IVORY)
-  wallet = 0,              // current coins (for PYRITE)
-  chipStackSize = 1,       // total chips in stack (for AURORA)
-  ante = 1,                // current ante / completed rounds (for LICHEN)
+  uniqueSuitCount = 1,
+  faceCardCount = 0,
+  aceCount = 0,
+  wallet = 0,
+  chipStackSize = 1,
+  ante = 1,
+  rngState?: number,
 ): ChainResult {
   // MOONSTONE: pick one random chip (other than MOONSTONE) to fire twice
+  let s = rngState;
   const moonstoneActive = chips.includes(ChipType.MOONSTONE);
   const nonMoonstoneChips = chips.filter(c => c !== ChipType.MOONSTONE);
-  const moonstoneDouble = moonstoneActive && nonMoonstoneChips.length > 0
-    ? nonMoonstoneChips[Math.floor(Math.random() * nonMoonstoneChips.length)]
-    : null;
+  let moonstoneDouble: ChipTypeValue | null = null;
+  if (moonstoneActive && nonMoonstoneChips.length > 0) {
+    if (s === undefined) moonstoneDouble = nonMoonstoneChips[0];
+    else {
+      const pick = pickOne(s, nonMoonstoneChips);
+      s = pick.state;
+      moonstoneDouble = pick.value;
+    }
+  }
 
   // Build execution list — double the moonstone target
   const execList: ChipTypeValue[] = [];
@@ -704,7 +716,9 @@ export function applyChipsSequential(
         break;
       }
       case ChipType.LUCKY: {
-        const roll = 10 + Math.floor(Math.random() * 41);
+        const rollDraw = s === undefined ? { value: 20, state: 0 } : nextInt(s, 41);
+        if (s !== undefined) s = rollDraw.state;
+        const roll = 10 + rollDraw.value;
         running += roll;
         steps.push({ chipType: chip, label: 'Lucky Chip', delta: `+${roll}`, before, after: running });
         break;
@@ -1061,7 +1075,7 @@ export function applyChipsSequential(
     }
   }
 
-  return { finalScore: running, steps, skimDoubled, vaultBonus, diamondActive, skimPenalty };
+  return { finalScore: running, steps, skimDoubled, vaultBonus, diamondActive, skimPenalty, rngState: s };
 }
 
 // Keep old applyChips for compatibility — delegates to sequential

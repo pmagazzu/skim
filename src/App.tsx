@@ -486,6 +486,23 @@ function App() {
               </div>
             </div>
 
+            {/* Run seed */}
+            <div style={{ width: '100%' }}>
+              <div style={{ fontFamily: "'VT323',monospace", fontSize: 16, color: '#4b5563', letterSpacing: '0.1em', marginBottom: 8, textAlign: 'center' }}>
+                — RUN SEED —
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                  value={state.runSeed}
+                  onChange={(e) => dispatch({ type: 'SET_RUN_SEED', seed: e.target.value })}
+                  className="w-full"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '8px 10px', color: '#e5d5b0', fontFamily: "'VT323',monospace", fontSize: 16 }}
+                />
+                <button onClick={() => dispatch({ type: 'NEW_RANDOM_SEED' })} className="btn-secondary px-3">🎲</button>
+                <button onClick={() => dispatch({ type: 'SET_DAILY_SEED' })} className="btn-secondary px-3">DAILY</button>
+              </div>
+            </div>
+
             {/* Difficulty */}
             <div style={{ width: '100%' }}>
               <div style={{ fontFamily: "'VT323',monospace", fontSize: 16, color: '#4b5563', letterSpacing: '0.1em', marginBottom: 10, textAlign: 'center' }}>
@@ -586,6 +603,18 @@ function App() {
                     🎯 {state.activeBounties.filter(b => !b.completed).length} active
                   </div>
                 )}
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', gap: 6, alignItems: 'center', fontFamily: "'VT323',monospace", fontSize: 12, color: '#7c6b4d' }}>
+                  <span>Seed: {state.runSeed}</span>
+                  <button
+                    className="btn-secondary px-2 py-0.5"
+                    onClick={() => {
+                      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(state.runSeed);
+                      else {
+                        const ta = document.createElement('textarea'); ta.value = state.runSeed; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+                      }
+                    }}
+                  >Copy</button>
+                </div>
               </div>
 
               {/* Row 2: community left | hand right */}
@@ -669,7 +698,7 @@ function App() {
               <Consumables
                 held={state.consumables}
                 onUse={type => dispatch({ type: 'USE_CONSUMABLE', consumable: type })}
-                onRouletteBet={amount => dispatch({ type: 'ROULETTE_BET', amount })}
+                onRouletteSpin={({ betAmount, betType, pickedNumbers }) => dispatch({ type: 'ROULETTE_SPIN', betAmount, betType, pickedNumbers })}
                 scratchMultiplier={state.scratchMultiplier}
                 unlockedSlots={state.consumableSlots}
                 vertical={false}
@@ -781,6 +810,7 @@ function App() {
                 <span className="text-gray-400">Total skimmed</span>
                 <span className="gold-glow chip-counter">{totalSkimmed}</span>
               </div>
+              <div className="text-xs text-gray-500">Seed: {state.runSeed}</div>
             </div>
             <div className="flex flex-col gap-1.5">
               {getBadges().map(b => (
@@ -812,6 +842,7 @@ function App() {
                 <span className="text-gray-400">Final skim rate</span>
                 <span className="text-amber-500">{Math.round(state.skimRate * 100)}%</span>
               </div>
+              <div className="text-xs text-gray-500">Seed: {state.runSeed}</div>
             </div>
             <div className="flex flex-col gap-1.5">
               {getBadges().map(b => (

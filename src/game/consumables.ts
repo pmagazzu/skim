@@ -1,3 +1,5 @@
+import { nextInt } from './rng';
+
 export const ConsumableType = {
   SCRATCH_TICKET:  'SCRATCH_TICKET',
   HIGH_CARD_DRAW:  'HIGH_CARD_DRAW',
@@ -45,7 +47,9 @@ export function getConsumable(type: ConsumableTypeValue): Consumable {
   return CONSUMABLES[type];
 }
 
-export function rollScratchMultiplier(): number {
+export function rollScratchMultiplier(rngState?: number): number | { value: number; rngState: number } {
   const rolls = [1, 1, 2, 2, 3, 4, 5];
-  return rolls[Math.floor(Math.random() * rolls.length)];
+  const draw = nextInt(rngState ?? (Date.now() >>> 0), rolls.length);
+  if (rngState === undefined) return rolls[draw.value];
+  return { value: rolls[draw.value], rngState: draw.state };
 }
