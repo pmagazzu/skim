@@ -78,12 +78,24 @@ function OfferCard({ item, sold, canBuy, onBuy, full }: {
   const icon = item.type === 'consumable' && item.consumableType
     ? CONSUMABLE_ICONS[item.consumableType] ?? '🎴'
     : item.type === 'pack' ? '📦' : item.type === 'skim-upgrade' ? '📈' : '✨';
+  const slotLabel = item.type === 'chip'
+    ? 'CHIP'
+    : item.type === 'consumable'
+      ? 'CASINO'
+      : item.type === 'skim-upgrade'
+        ? 'SKIM'
+        : item.type === 'pack'
+          ? 'DECK'
+          : 'OFFER';
 
   return (
     <div className="shop-card flex flex-col gap-1.5" style={{ minHeight: 120 }}>
-      <div className="flex items-center gap-2">
-        {isChip ? <ChipArt type={item.chipType!} size={30} /> : <span style={{ fontSize: 22 }}>{icon}</span>}
-        <div style={{ fontFamily: "'VT323',monospace", fontSize: 20, color: '#f8d082', lineHeight: 1 }}>{item.label}</div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          {isChip ? <ChipArt type={item.chipType!} size={30} /> : <span style={{ fontSize: 22 }}>{icon}</span>}
+          <div style={{ fontFamily: "'VT323',monospace", fontSize: 20, color: '#f8d082', lineHeight: 1 }} className="truncate">{item.label}</div>
+        </div>
+        <div style={{ fontFamily: "'VT323',monospace", fontSize: 12, color: '#6b7280', letterSpacing: '0.08em' }}>{slotLabel}</div>
       </div>
       <div style={{ fontFamily: "'VT323',monospace", fontSize: 15, color: '#9ca3af', lineHeight: 1.2 }}>{conciseDesc(item)}</div>
       <div className="mt-auto flex items-center justify-between">
@@ -140,28 +152,32 @@ export function Shop({
 
   const offers = useMemo(() => {
     const chips = stableItems.filter(i => i.type === 'chip');
-    const utility = stableItems.filter(i => i.type === 'consumable' || i.type === 'skim-upgrade');
+    const casino = stableItems.filter(i => i.type === 'consumable');
+    const skim = stableItems.filter(i => i.type === 'skim-upgrade');
     const deck = stableItems.filter(i => i.type === 'pack');
 
-    const slot1 = chips[0] ?? null;
-    const slot2 = utility[0] ?? null;
-    const slot3 = deck[0] ?? null;
-
-    const used = new Set([slot1?.id, slot2?.id, slot3?.id].filter(Boolean) as string[]);
-    const wildcard = stableItems.find(i => !used.has(i.id)) ?? null;
-
-    return [slot1, slot2, slot3, wildcard] as const;
+    return [
+      chips[0] ?? null,
+      chips[1] ?? null,
+      chips[2] ?? null,
+      casino[0] ?? null,
+      skim[0] ?? null,
+      deck[0] ?? null,
+    ] as const;
   }, [stableItems]);
 
   return (
     <div className="flex flex-col gap-3 p-3 w-full">
-      {/* Top bar */}
+      {/* Header */}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontFamily: "'Press Start 2P',monospace", fontSize: 16, letterSpacing: '0.08em', color: '#fbbf24' }}>SHOP</div>
+      </div>
+
+      {/* Compact top controls */}
       <div className="flex items-center justify-between">
+        <button onClick={() => { playButtonPress(); onViewDeck(); }} className="btn-secondary" style={{ fontSize: 12, padding: '6px 10px' }}>DECK {deckSize}</button>
         <div style={{ fontFamily: "'VT323',monospace", fontSize: 28, color: '#fbbf24' }}>💰 {personalChips.toLocaleString()}c</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button onClick={() => { playButtonPress(); onViewDeck(); }} className="btn-secondary" style={{ fontSize: 12, padding: '6px 10px' }}>DECK {deckSize}</button>
-          <button onClick={() => { playButtonPress(); onEndShop(); }} className="btn-primary" style={{ fontSize: 13, padding: '7px 12px' }}>DONE →</button>
-        </div>
+        <button onClick={() => { playButtonPress(); onEndShop(); }} className="btn-primary" style={{ fontSize: 13, padding: '7px 12px' }}>DONE →</button>
       </div>
 
       {/* Offer board */}
