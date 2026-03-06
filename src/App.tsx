@@ -448,7 +448,7 @@ function App() {
                 ] as const).map(t => (
                   <button
                     key={t.id}
-                    onClick={() => dispatch({ type: 'SET_THEME', theme: t.id })}
+                    onClick={() => { playButtonPress(); dispatch({ type: 'SET_THEME', theme: t.id }); }}
                     style={{
                       fontFamily: "'VT323',monospace", fontSize: 17,
                       padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
@@ -478,7 +478,7 @@ function App() {
                 ] as const).map(({ d, icon, label, sub }) => (
                   <button
                     key={d}
-                    onClick={() => dispatch({ type: 'SET_DIFFICULTY', difficulty: d })}
+                    onClick={() => { playButtonPress(); dispatch({ type: 'SET_DIFFICULTY', difficulty: d }); }}
                     style={{
                       width: '100%', textAlign: 'left', cursor: 'pointer',
                       background: 'rgba(255,255,255,0.02)',
@@ -518,7 +518,7 @@ function App() {
                 onReorder={(from, to) => dispatch({ type: 'REORDER_CHIPS', fromIndex: from, toIndex: to })}
               />
             )}
-            <button onClick={() => { playButtonPress(); [0,1,2,3,4].forEach(i => playCardDeal(i)); dispatch({ type: 'DEAL' }); }} className="btn-primary text-xl px-16 py-4">
+            <button onClick={() => { playHandPlay(); [0,1,2,3,4].forEach(i => playCardDeal(i)); dispatch({ type: 'DEAL' }); }} className="btn-primary text-xl px-16 py-4">
               DEAL
             </button>
           </div>

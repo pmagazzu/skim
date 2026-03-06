@@ -33,8 +33,8 @@ export function ChipStack({ chips, blackChipUsed, lastFiredChips = [], canTip = 
     const now = Date.now();
     const last = lastTapRef.current;
 
-    // Double-tap same chip → show tooltip (and cancel any pending swap)
-    if (last && last.index === i && now - last.time < 400) {
+    // Double-tap same chip → show tooltip (cancel any pending swap)
+    if (last && last.index === i && now - last.time < 450) {
       lastTapRef.current = null;
       setPendingSwap(null);
       setTooltip(i);
@@ -46,7 +46,7 @@ export function ChipStack({ chips, blackChipUsed, lastFiredChips = [], canTip = 
     // If a swap is pending
     if (pendingSwap !== null) {
       if (pendingSwap === i) {
-        // Tap same chip → cancel swap
+        // Tap same chip again (not double-tap speed) → cancel swap
         setPendingSwap(null);
       } else {
         // Tap different chip → perform swap
@@ -58,6 +58,14 @@ export function ChipStack({ chips, blackChipUsed, lastFiredChips = [], canTip = 
 
     // First tap → enter swap mode (pick up chip)
     setPendingSwap(i);
+  }
+
+  function handleChipPointerDown(e: React.PointerEvent, i: number) {
+    // Use pointerDown for instant response (no 300ms iOS delay)
+    // Only fire on primary pointer (finger/mouse), ignore multi-touch
+    if (e.button !== 0 && e.pointerType !== 'touch') return;
+    e.preventDefault();
+    handleChipTap(i);
   }
 
   const tooltipChip = tooltip !== null ? chips[tooltip] : null;
@@ -76,7 +84,7 @@ export function ChipStack({ chips, blackChipUsed, lastFiredChips = [], canTip = 
         </div>
       )}
 
-      <div className="flex flex-row flex-wrap gap-2 items-center justify-center">
+      <div className="flex flex-row flex-nowrap gap-2 items-center justify-center" style={{ overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 2 }}>
         {chips.map((type, i) => {
           const chip = getChip(type);
           const dimmed = type === 'BLACK' && blackChipUsed;
@@ -87,8 +95,8 @@ export function ChipStack({ chips, blackChipUsed, lastFiredChips = [], canTip = 
             <div
               key={`${type}-${i}`}
               className="relative flex flex-col items-center"
-              onClick={() => handleChipTap(i)}
-              style={{ cursor: 'pointer' }}
+              onPointerDown={e => handleChipPointerDown(e, i)}
+              style={{ cursor: 'pointer', touchAction: 'none', flexShrink: 0 }}
             >
               <div className={[
                 'select-none transition-transform',

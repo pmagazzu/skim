@@ -4,6 +4,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Instant touch response — eliminates iOS 300ms click delay globally */
+button, [role="button"], a {
+  touch-action: manipulation;
+}
+
 /* ── THEMES ── */
 
 /* Default: Casino Gold — dark amber, green felt */
@@ -349,6 +354,7 @@ body::after {
   padding: 0.75rem 2rem;
   font-size: 0.8rem;
   cursor: pointer;
+  touch-action: manipulation;
   box-shadow: 0 6px 0 color-mix(in srgb, var(--accent) 60%, black),
               0 4px 14px var(--accent-glow),
               0 0 18px var(--accent-glow),
@@ -391,6 +397,7 @@ body::after {
   border-radius: 0.5rem;
   padding: 0.55rem 1.2rem;
   cursor: pointer;
+  touch-action: manipulation;
   transition: all 0.1s;
   box-shadow: 0 2px 0 rgba(0,0,0,0.4);
   position: relative;

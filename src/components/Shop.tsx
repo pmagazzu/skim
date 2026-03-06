@@ -236,7 +236,7 @@ export function Shop({
       )}
 
       {/* Tab nav — single row, no wrap */}
-      <div className="flex gap-1" style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', paddingTop: 8, paddingBottom: 2 }}>
+      <div className="flex gap-1" style={{ overflowX: 'auto', overflowY: 'hidden', scrollbarWidth: 'none', paddingTop: 8, paddingBottom: 2, touchAction: 'pan-x', overscrollBehaviorX: 'contain' } as React.CSSProperties}>
         <TabButton label="CHIPS"    active={tab === 'chips'}    onClick={() => setTab('chips')}    badge={chipItems.length} />
         <TabButton label="CASINO"   active={tab === 'casino'}   onClick={() => setTab('casino')}   badge={casinoItems.length} />
         <TabButton label="DECK"     active={tab === 'deck'}     onClick={() => setTab('deck')}     badge={packItems.length} />
