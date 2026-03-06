@@ -66,15 +66,15 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
   }, [onSortChange]);
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-2">
       {/* Sort controls */}
       <div className="flex items-center gap-1">
-        <span style={{ fontFamily: "'VT323',monospace", fontSize: 16, color: '#6b7280' }} className="mr-1">Sort:</span>
+        <span style={{ fontFamily: "'VT323',monospace", fontSize: 14, color: '#6b7280' }} className="mr-1">Sort:</span>
         {SORT_OPTIONS.map(o => (
           <button
             key={o.mode}
             onClick={e => handleSortClick(o.mode, e.currentTarget as HTMLButtonElement)}
-            style={{ fontFamily: "'VT323',monospace", fontSize: 15, padding: '4px 10px' }}
+            style={{ fontFamily: "'VT323',monospace", fontSize: 14, padding: '3px 8px' }}
             className={[
               'rounded transition-all',
               sortMode === o.mode
@@ -86,7 +86,7 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
           </button>
         ))}
       </div>
-      <div className="flex gap-1 flex-nowrap justify-center" style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', width: '100%', paddingTop: 16 }}>
+      <div className="flex gap-1 flex-nowrap justify-center" style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', width: '100%', paddingTop: 10 }}>
         {sortedHand.map((card, i) => (
           <Card
             key={card.id}
@@ -110,21 +110,21 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
         </div>
       )}
 
-      <div style={{ minHeight: 36, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div style={{ minHeight: 28, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
         {handResult && selectedIds.length > 0 ? (
           <>
-            <span style={{ fontFamily: "'VT323',monospace", fontSize: 24, color: '#fbbf24', letterSpacing: '0.04em' }}>{handResult.name}</span>
+            <span style={{ fontFamily: "'VT323',monospace", fontSize: 20, color: '#fbbf24', letterSpacing: '0.04em' }}>{handResult.name}</span>
             {handLevels[handResult.rank] > 1 && (
-              <span style={{ fontFamily: "'VT323',monospace", fontSize: 20, color: '#a78bfa' }}>
+              <span style={{ fontFamily: "'VT323',monospace", fontSize: 17, color: '#a78bfa' }}>
                 Lv.{handLevels[handResult.rank]}
               </span>
             )}
-            <span style={{ fontFamily: "'VT323',monospace", fontSize: 26, color: scratchMultiplier > 1 ? '#fb923c' : '#ca8a04', fontWeight: 'bold' }}>
+            <span style={{ fontFamily: "'VT323',monospace", fontSize: 22, color: scratchMultiplier > 1 ? '#fb923c' : '#ca8a04', fontWeight: 'bold' }}>
               +{chipPreview.toLocaleString()}c
             </span>
           </>
         ) : (
-          <span style={{ fontFamily: "'VT323',monospace", fontSize: 20, color: '#4b5563' }}>Select 1–5 cards to play</span>
+          <span style={{ fontFamily: "'VT323',monospace", fontSize: 17, color: '#4b5563' }}>Select 1–5 cards to play</span>
         )}
       </div>
 
@@ -141,7 +141,7 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
           onClick={canPlay ? onPlay : undefined}
           disabled={!canPlay}
           className="btn-primary flex-1"
-          style={{ fontSize: 17, padding: '14px 16px', maxWidth: 220 }}
+          style={{ fontSize: 16, padding: '10px 16px', maxWidth: 220 }}
         >
           PLAY HAND
         </button>
@@ -149,7 +149,7 @@ export function Hand({ hand, selectedIds, onSelect, onPlay, onDiscard, handResul
           onClick={canDiscard ? onDiscard : undefined}
           disabled={!canDiscard}
           title={isPaidDiscard ? `Costs ${extraDiscardCost}c — free discards used up` : `${freeDiscardsLeft} free discard${freeDiscardsLeft !== 1 ? 's' : ''} remaining`}
-          style={{ fontSize: 15, padding: '14px 14px' }}
+          style={{ fontSize: 14, padding: '10px 12px' }}
           className={[
             'btn-secondary',
             !canDiscard ? 'opacity-30 cursor-default' : '',

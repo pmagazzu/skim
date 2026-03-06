@@ -131,7 +131,7 @@ export function Vault({ chips, target }: VaultProps) {
       flexDirection: 'column',
       alignItems: 'stretch',
       gap: 3,
-      padding: '5px 8px 5px',
+      padding: '3px 8px 4px',
       background: '#080808',
       border: `1px solid ${full ? '#166534' : '#1a1400'}`,
       borderRadius: 8,

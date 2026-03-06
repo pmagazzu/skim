@@ -468,8 +468,8 @@ body::before {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 4px 8px 8px;
+  gap: 2px;
+  padding: 2px 8px 6px;
   box-sizing: border-box;
 }
 
@@ -485,8 +485,8 @@ body::before {
 .felt-top-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding-bottom: 2px;
+  gap: 2px;
+  padding-bottom: 0;
   width: 100%;
 }
 .felt-top-row-strip {
@@ -506,11 +506,11 @@ body::before {
 
 /* Felt table — portrait */
 .felt-table {
-  padding: 6px 8px 8px;
+  padding: 4px 8px 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
   flex: unset;
 }
@@ -544,7 +544,7 @@ body::before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   width: 100%;
 }
 

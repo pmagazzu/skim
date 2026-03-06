@@ -357,7 +357,7 @@ function App() {
       <div className="vignette" />
       <div className="crt-overlay" />
       {/* Header — hidden during active gameplay to save vertical space */}
-      <header className={`flex items-center justify-between px-4 py-3 border-b border-white/5 ${state.phase === 'selecting' || state.phase === 'score-review' ? 'hidden' : ''}`} style={{ maxWidth: 430, width: '100%', alignSelf: 'center', boxSizing: 'border-box' }}>
+      <header className={`flex items-center justify-between px-4 py-1.5 border-b border-white/5 ${state.phase === 'selecting' || state.phase === 'score-review' ? 'hidden' : ''}`} style={{ maxWidth: 430, width: '100%', alignSelf: 'center', boxSizing: 'border-box' }}>
         <div className="flex items-center gap-3">
           <div className="title-font text-2xl gold-glow tracking-widest">SKIM</div>
           <button onClick={() => setAppMode('lobby')} style={{ fontFamily: "'Press Start 2P',monospace", fontSize: 7, background: 'transparent', border: '1px solid #3a2e1e', borderRadius: 4, color: '#6b5a3e', padding: '3px 7px', cursor: 'pointer', letterSpacing: '0.05em' }}>
