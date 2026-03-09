@@ -477,12 +477,35 @@ function generateBoosterOptions(state: GameState, item: ShopItem): { options: Bo
   };
 
   while (options.length < item.optionCount) {
-    if (item.boosterType === BoosterType.CHIP) pushChip();
-    else if (item.boosterType === BoosterType.HAND) pushHand();
-    else if (item.boosterType === BoosterType.UTILITY) pushUtility();
-    else if (item.boosterType === BoosterType.FORGE) pushForge();
-    else if (item.boosterType === BoosterType.BOUNTY) pushBounty();
-    else [pushChip, pushHand, pushUtility, pushForge, pushBounty][randIndex(5)]();
+    if (item.boosterType === BoosterType.CHIP) {
+      pushChip();
+    } else if (item.boosterType === BoosterType.HAND) {
+      pushHand();
+    } else if (item.boosterType === BoosterType.UTILITY) {
+      pushUtility();
+    } else if (item.boosterType === BoosterType.FORGE) {
+      pushForge();
+    } else if (item.boosterType === BoosterType.BOUNTY) {
+      pushBounty();
+    } else {
+      // TRUE wildcard: any reward path, including direct chip payout and cross-tier forge.
+      const branch = randIndex(7);
+      if (branch === 0) pushChip();
+      else if (branch === 1) pushHand();
+      else if (branch === 2) pushUtility();
+      else if (branch === 3) pushBounty();
+      else if (branch === 4) {
+        // Wild forge can roll any rarity, not booster-locked
+        const fr: BoosterRarity[] = ['common', 'uncommon', 'rare', 'legendary'];
+        const rf = fr[randIndex(fr.length)];
+        options.push({ id: makeId(`opt-forge-${rf}`), kind: 'forge', forgeRarity: rf, label: `${rf.toUpperCase()} Forge`, detail: 'Random card modifier' });
+      } else {
+        // Cash jackpot lane
+        const jackpots = [40, 65, 90, 130];
+        const amt = jackpots[randIndex(jackpots.length)];
+        options.push({ id: makeId(`opt-cash-${amt}`), kind: 'chips', chipsAmount: amt, label: `+${amt} chips`, detail: 'Direct payout' });
+      }
+    }
   }
   if (options.every(o => o.kind === 'chips')) options[0] = { id: makeId('opt-skim-safe'), kind: 'skim-upgrade', label: 'Skim Rate +5%', detail: 'Safety offer' };
   return { options: options.slice(0, item.optionCount), rngState: s };
@@ -505,7 +528,7 @@ function generateShop(_held: ConsumableTypeValue[], chipStack: ChipTypeValue[], 
     { boosterType: BoosterType.HAND, label: 'Hand Booster', subtitle: 'Pick 1 of 2 upgrades', baseCost: 42 },
     { boosterType: BoosterType.UTILITY, label: 'Utility Booster', subtitle: 'Pick 1 of 2 utility', baseCost: 38 },
     { boosterType: BoosterType.FORGE, label: 'Forge Booster', subtitle: 'Pick 1 forge path', baseCost: 56 },
-    { boosterType: BoosterType.WILDCARD, label: 'Wildcard Booster', subtitle: 'Pick 1 mixed reward', baseCost: 52 },
+    { boosterType: BoosterType.WILDCARD, label: 'Wildcard Booster', subtitle: 'Pick 1 of absolutely anything', baseCost: 52 },
     { boosterType: BoosterType.BOUNTY, label: 'Bounty Booster', subtitle: 'Pick 1 contract', baseCost: 35 },
   ] as const;
 
@@ -519,7 +542,11 @@ function generateShop(_held: ConsumableTypeValue[], chipStack: ChipTypeValue[], 
     s = rarityRoll.rngState;
     const premium = rarityRoll.rarity === 'legendary';
     const cost = Math.max(8, Math.floor(d.baseCost * ({ common:1, uncommon:1.22, rare:1.58, legendary:2.05 }[rarityRoll.rarity]) * (1 - shopDiscount)));
-    const optionCount = pickRoll.value === BoosterType.CHIP ? (premium ? 4 : 3) : 2;
+    const optionCount = pickRoll.value === BoosterType.CHIP
+      ? (premium ? 4 : 3)
+      : pickRoll.value === BoosterType.WILDCARD
+        ? (premium ? 4 : 3)
+        : 2;
     const idTok = nextInt(s, 0x7fffffff); s = idTok.state;
     chosen.push({ id: `shop-booster-${pickRoll.value}-${idTok.value.toString(36)}`, label: premium ? `Premium ${d.label}` : d.label, subtitle: d.subtitle, cost, type: 'booster', boosterType: pickRoll.value, rarity: rarityRoll.rarity, optionCount, premium });
     types.add(pickRoll.value);
