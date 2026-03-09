@@ -7,6 +7,11 @@
 /* Instant touch response — eliminates iOS 300ms click delay globally */
 button, [role="button"], a {
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  pointer-events: auto;
 }
 
 /* ── THEMES ── */
@@ -444,7 +449,6 @@ body::after {
               inset 0 1px 0 rgba(255,255,255,0.35);
   transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 120ms ease, filter 120ms ease;
   position: relative;
-  top: 0;
   will-change: transform;
 }
 .btn-primary:hover:not(:disabled) {
@@ -453,13 +457,11 @@ body::after {
               0 10px 26px var(--accent-glow),
               0 0 36px color-mix(in srgb, var(--accent-glow) 95%, transparent),
               inset 0 1px 0 rgba(255,255,255,0.42);
-  transform: translateY(-2px) scale(1.018);
-  top: -2px;
+  transform: translateY(-1px) scale(1.01);
   filter: brightness(1.1);
 }
 .btn-primary:active:not(:disabled) {
-  transform: translateY(3px) scale(0.982);
-  top: 3px;
+  transform: translateY(2px) scale(0.988);
   box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 62%, black),
               0 3px 8px color-mix(in srgb, var(--accent-glow) 70%, transparent),
               inset 0 2px 5px rgba(0,0,0,0.22);
@@ -489,18 +491,15 @@ body::after {
   transition: transform 110ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 110ms ease, background 110ms, color 110ms, border-color 110ms;
   box-shadow: 0 2px 0 rgba(0,0,0,0.4);
   position: relative;
-  top: 0;
 }
 .btn-secondary:hover {
   background: rgba(255,255,255,0.12);
   color: var(--text-primary);
   border-color: rgba(255,255,255,0.26);
-  transform: translateY(-1px) scale(1.01);
-  top: -1px;
+  transform: translateY(-1px) scale(1.006);
 }
 .btn-secondary:active {
-  transform: translateY(2px) scale(0.985);
-  top: 2px;
+  transform: translateY(1px) scale(0.99);
   box-shadow: 0 1px 0 rgba(0,0,0,0.25);
   transition: transform 60ms, box-shadow 60ms;
 }
