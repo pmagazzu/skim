@@ -535,7 +535,15 @@ function generateShop(_held: ConsumableTypeValue[], chipStack: ChipTypeValue[], 
   const chosen: ShopItem[] = [];
   const types = new Set<BoosterTypeValue>();
   while (chosen.length < 5) {
-    const pickRoll = weightedPickSeeded(s, def.map(d => ({ key: d.boosterType, weight: (synergy[d.boosterType] ?? 1) * (types.has(d.boosterType) ? 0.35 : 1) })));
+    const pickRoll = weightedPickSeeded(
+      s,
+      def.map(d => {
+        const already = types.has(d.boosterType);
+        // Hard cap: at most one Wildcard booster per shop.
+        const duplicateFactor = d.boosterType === BoosterType.WILDCARD && already ? 0 : (already ? 0.35 : 1);
+        return { key: d.boosterType, weight: (synergy[d.boosterType] ?? 1) * duplicateFactor };
+      }),
+    );
     s = pickRoll.state;
     const d = def.find(x => x.boosterType === pickRoll.value)!;
     const rarityRoll = boosterRarityFor(ante, s, pickRoll.value === BoosterType.WILDCARD || pickRoll.value === BoosterType.FORGE);
