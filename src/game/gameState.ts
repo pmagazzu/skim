@@ -445,8 +445,26 @@ function generateBoosterOptions(state: GameState, item: ShopItem): { options: Bo
   const forgeFallback = rarityOrder[Math.max(0, rarityOrder.indexOf(item.rarity))];
   const cVals = Object.values(ConsumableType) as ConsumableTypeValue[];
   const options: BoosterOption[] = [];
+  const seen = new Set<string>();
   const makeId = (prefix: string) => { const out = seededId(prefix, s); s = out.rngState; return out.id; };
   const randIndex = (len:number) => { const r=nextInt(s,len); s=r.state; return r.value; };
+  const optionKey = (o: BoosterOption): string => {
+    if (o.kind === 'chip') return `chip:${o.chipType}`;
+    if (o.kind === 'hand-upgrade') return `hand:${o.handRank}`;
+    if (o.kind === 'consumable') return `cons:${o.consumableType}`;
+    if (o.kind === 'skim-upgrade') return 'skim-upgrade';
+    if (o.kind === 'forge') return `forge:${o.forgeRarity}`;
+    if (o.kind === 'bounty') return `bounty:${o.bountyId}`;
+    if (o.kind === 'chips') return `chips:${o.chipsAmount}`;
+    return `${o.kind}:${o.label}`;
+  };
+  const addUnique = (o: BoosterOption) => {
+    const k = optionKey(o);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    options.push(o);
+    return true;
+  };
   const randomHand = (): HandRankValue => { const p = weightedPickSeeded(s, [
     { key: 1 as HandRankValue, weight: 20 }, { key: 2 as HandRankValue, weight: 17 }, { key: 3 as HandRankValue, weight: 15 },
     { key: 4 as HandRankValue, weight: 12 }, { key: 5 as HandRankValue, weight: 10 }, { key: 6 as HandRankValue, weight: 8 },
@@ -454,29 +472,32 @@ function generateBoosterOptions(state: GameState, item: ShopItem): { options: Bo
   ]); s = p.state; return p.value; };
 
   const pushChip = () => {
-    if (state.chipStack.length >= maxChips) options.push({ id: makeId('opt-cash'), kind: 'chips', chipsAmount: 45, label: '+45 chips', detail: 'Stack full fallback' });
-    else {
+    if (state.chipStack.length >= maxChips) {
+      addUnique({ id: makeId('opt-cash'), kind: 'chips', chipsAmount: 45, label: '+45 chips', detail: 'Stack full fallback' });
+    } else {
       const all = Object.values(ChipType) as ChipTypeValue[];
       const pool = all.filter(ch => CHIPS[ch].rarity === item.rarity);
       const source = pool.length > 0 ? pool : all;
       const chip = source[randIndex(source.length)];
-      options.push({ id: makeId(`opt-chip-${chip}`), kind: 'chip', chipType: chip, label: CHIPS[chip].name, detail: CHIPS[chip].description });
+      addUnique({ id: makeId(`opt-chip-${chip}`), kind: 'chip', chipType: chip, label: CHIPS[chip].name, detail: CHIPS[chip].description });
     }
   };
-  const pushHand = () => { const hr = randomHand(); options.push({ id: makeId(`opt-hand-${hr}`), kind: 'hand-upgrade', handRank: hr, label: `${HAND_NAMES[hr]} +1`, detail: 'Upgrade hand rank' }); };
+  const pushHand = () => { const hr = randomHand(); addUnique({ id: makeId(`opt-hand-${hr}`), kind: 'hand-upgrade', handRank: hr, label: `${HAND_NAMES[hr]} +1`, detail: 'Upgrade hand rank' }); };
   const pushUtility = () => {
     const b = nextBool(s, 0.55); s = b.state;
-    if (b.value) { const c = cVals[randIndex(cVals.length)]; options.push({ id: makeId(`opt-c-${c}`), kind: 'consumable', consumableType: c, label: `+ ${c.split('_').join(' ')}`, detail: 'Consumable' }); }
-    else options.push({ id: makeId('opt-skim'), kind: 'skim-upgrade', label: 'Skim Rate +5%', detail: 'Permanent' });
+    if (b.value) { const c = cVals[randIndex(cVals.length)]; addUnique({ id: makeId(`opt-c-${c}`), kind: 'consumable', consumableType: c, label: `+ ${c.split('_').join(' ')}`, detail: 'Consumable' }); }
+    else addUnique({ id: makeId('opt-skim'), kind: 'skim-upgrade', label: 'Skim Rate +5%', detail: 'Permanent' });
   };
-  const pushForge = () => options.push({ id: makeId('opt-forge'), kind: 'forge', forgeRarity: forgeFallback, label: `${forgeFallback.toUpperCase()} Forge`, detail: 'Random card modifier' });
+  const pushForge = () => addUnique({ id: makeId('opt-forge'), kind: 'forge', forgeRarity: forgeFallback, label: `${forgeFallback.toUpperCase()} Forge`, detail: 'Random card modifier' });
   const pushBounty = () => {
     const open = state.availableBounties.filter(b => !b.accepted);
-    if (open.length === 0) options.push({ id: makeId('opt-cash'), kind: 'chips', chipsAmount: 65, label: '+65 chips', detail: 'No bounties available' });
-    else { const b = open[randIndex(open.length)]; options.push({ id: `opt-bounty-${b.id}`, kind: 'bounty', bountyId: b.id, label: b.title, detail: b.rewardLabel }); }
+    if (open.length === 0) addUnique({ id: makeId('opt-cash'), kind: 'chips', chipsAmount: 65, label: '+65 chips', detail: 'No bounties available' });
+    else { const b = open[randIndex(open.length)]; addUnique({ id: `opt-bounty-${b.id}`, kind: 'bounty', bountyId: b.id, label: b.title, detail: b.rewardLabel }); }
   };
 
-  while (options.length < item.optionCount) {
+  let guard = 0;
+  while (options.length < item.optionCount && guard < 80) {
+    guard++;
     if (item.boosterType === BoosterType.CHIP) {
       pushChip();
     } else if (item.boosterType === BoosterType.HAND) {
@@ -498,16 +519,26 @@ function generateBoosterOptions(state: GameState, item: ShopItem): { options: Bo
         // Wild forge can roll any rarity, not booster-locked
         const fr: BoosterRarity[] = ['common', 'uncommon', 'rare', 'legendary'];
         const rf = fr[randIndex(fr.length)];
-        options.push({ id: makeId(`opt-forge-${rf}`), kind: 'forge', forgeRarity: rf, label: `${rf.toUpperCase()} Forge`, detail: 'Random card modifier' });
+        addUnique({ id: makeId(`opt-forge-${rf}`), kind: 'forge', forgeRarity: rf, label: `${rf.toUpperCase()} Forge`, detail: 'Random card modifier' });
       } else {
         // Cash jackpot lane
         const jackpots = [40, 65, 90, 130];
         const amt = jackpots[randIndex(jackpots.length)];
-        options.push({ id: makeId(`opt-cash-${amt}`), kind: 'chips', chipsAmount: amt, label: `+${amt} chips`, detail: 'Direct payout' });
+        addUnique({ id: makeId(`opt-cash-${amt}`), kind: 'chips', chipsAmount: amt, label: `+${amt} chips`, detail: 'Direct payout' });
       }
     }
   }
   if (options.every(o => o.kind === 'chips')) options[0] = { id: makeId('opt-skim-safe'), kind: 'skim-upgrade', label: 'Skim Rate +5%', detail: 'Safety offer' };
+
+  // Hard fallback to ensure pack has full unique count.
+  if (options.length < item.optionCount) {
+    const fallbackCash = [31, 47, 63, 79, 95, 111];
+    for (const amt of fallbackCash) {
+      if (options.length >= item.optionCount) break;
+      addUnique({ id: makeId(`opt-fallback-cash-${amt}`), kind: 'chips', chipsAmount: amt, label: `+${amt} chips`, detail: 'Fallback payout' });
+    }
+  }
+
   return { options: options.slice(0, item.optionCount), rngState: s };
 }
 
