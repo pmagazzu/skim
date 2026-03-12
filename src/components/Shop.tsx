@@ -46,13 +46,13 @@ const BOOSTER_EXPLAIN: Record<BoosterTypeValue, string> = {
   BOUNTY: 'Contains contracts · pick 1',
 };
 
-const BOOSTER_STYLE: Record<BoosterTypeValue, { band: string; stamp: string; edge: string; pattern: string }> = {
-  CHIP: { band: '#fbbf24', stamp: 'STACK', edge: '#7c4a03', pattern: 'repeating-linear-gradient(95deg, rgba(255,255,255,0.13) 0px, rgba(255,255,255,0.13) 2px, transparent 2px, transparent 8px)' },
-  HAND: { band: '#60a5fa', stamp: 'COMBO', edge: '#1d4ed8', pattern: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.14) 0px, rgba(255,255,255,0.14) 3px, transparent 3px, transparent 9px)' },
-  UTILITY: { band: '#a3e635', stamp: 'TECH', edge: '#4d7c0f', pattern: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.12) 0px, rgba(255,255,255,0.12) 3px, transparent 3px, transparent 7px)' },
-  FORGE: { band: '#fb923c', stamp: 'HEAT', edge: '#9a3412', pattern: 'repeating-linear-gradient(125deg, rgba(255,255,255,0.14) 0px, rgba(255,255,255,0.14) 2px, transparent 2px, transparent 6px)' },
-  WILDCARD: { band: '#c084fc', stamp: 'CHAOS', edge: '#6d28d9', pattern: 'conic-gradient(from 45deg at 50% 50%, rgba(255,255,255,0.2), transparent 22%, rgba(255,255,255,0.15), transparent 50%, rgba(255,255,255,0.2), transparent 78%, rgba(255,255,255,0.15), transparent)' },
-  BOUNTY: { band: '#fb7185', stamp: 'HUNT', edge: '#9f1239', pattern: 'repeating-linear-gradient(115deg, rgba(255,255,255,0.14) 0px, rgba(255,255,255,0.14) 4px, transparent 4px, transparent 10px)' },
+const BOOSTER_STYLE: Record<BoosterTypeValue, { band: string; stamp: string; edge: string; pattern: string; brand: string; shape: 'sport' | 'tcg' | 'tech' | 'metal' | 'neon' | 'poster' }> = {
+  CHIP: { band: '#fbbf24', stamp: 'STACK', edge: '#7c4a03', pattern: 'repeating-linear-gradient(95deg, rgba(255,255,255,0.13) 0px, rgba(255,255,255,0.13) 2px, transparent 2px, transparent 8px)', brand: 'CASINO CLASSIC', shape: 'sport' },
+  HAND: { band: '#60a5fa', stamp: 'COMBO', edge: '#1d4ed8', pattern: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.14) 0px, rgba(255,255,255,0.14) 3px, transparent 3px, transparent 9px)', brand: 'ARCANA DECK', shape: 'tcg' },
+  UTILITY: { band: '#a3e635', stamp: 'TECH', edge: '#4d7c0f', pattern: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.12) 0px, rgba(255,255,255,0.12) 3px, transparent 3px, transparent 7px)', brand: 'GADGET LAB', shape: 'tech' },
+  FORGE: { band: '#fb923c', stamp: 'HEAT', edge: '#9a3412', pattern: 'repeating-linear-gradient(125deg, rgba(255,255,255,0.14) 0px, rgba(255,255,255,0.14) 2px, transparent 2px, transparent 6px)', brand: 'IRONWORKS', shape: 'metal' },
+  WILDCARD: { band: '#c084fc', stamp: 'CHAOS', edge: '#6d28d9', pattern: 'conic-gradient(from 45deg at 50% 50%, rgba(255,255,255,0.2), transparent 22%, rgba(255,255,255,0.15), transparent 50%, rgba(255,255,255,0.2), transparent 78%, rgba(255,255,255,0.15), transparent)', brand: 'NOVA RIP', shape: 'neon' },
+  BOUNTY: { band: '#fb7185', stamp: 'HUNT', edge: '#9f1239', pattern: 'repeating-linear-gradient(115deg, rgba(255,255,255,0.14) 0px, rgba(255,255,255,0.14) 4px, transparent 4px, transparent 10px)', brand: 'OUTLAW POSTER', shape: 'poster' },
 };
 
 function FoilPack({ type, rarity, sold }: { type: BoosterTypeValue; rarity: string; sold?: boolean }) {
@@ -63,12 +63,13 @@ function FoilPack({ type, rarity, sold }: { type: BoosterTypeValue; rarity: stri
       : '0 6px 16px rgba(0,0,0,0.35)';
   const stars = rarity === 'legendary' ? '★★★' : rarity === 'rare' ? '★★' : rarity === 'uncommon' ? '★' : '•';
   const s = BOOSTER_STYLE[type];
+  const shapeRadius = s.shape === 'sport' ? '14px 14px 10px 10px' : s.shape === 'poster' ? '6px' : s.shape === 'neon' ? '16px 16px 8px 8px' : '11px';
 
   return (
     <div style={{
       width: 72,
       height: 98,
-      borderRadius: 11,
+      borderRadius: shapeRadius,
       background: FOIL_GRADIENT[type],
       border: `1px solid ${s.edge}`,
       boxShadow: sold ? 'none' : `${rareGlow}, inset 0 1px 0 rgba(255,255,255,0.36)`,
@@ -76,14 +77,30 @@ function FoilPack({ type, rarity, sold }: { type: BoosterTypeValue; rarity: stri
       overflow: 'hidden',
       opacity: sold ? 0.45 : 1,
       flexShrink: 0,
-      transform: sold ? 'none' : 'perspective(500px) rotateX(2deg)',
+      transform: sold ? 'none' : (s.shape === 'poster' ? 'rotate(-1deg)' : 'perspective(500px) rotateX(2deg)'),
     }}>
       <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0, background: s.pattern, opacity: type === 'WILDCARD' ? 0.45 : 1 }} />
       <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0, background: 'radial-gradient(circle at 20% 12%, rgba(255,255,255,0.4), transparent 38%)' }} />
+
+      {/* Brand-specific wrappers to feel like different product lines */}
+      {s.shape === 'sport' && <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 14, background: 'rgba(0,0,0,0.28)' }} />}
+      {s.shape === 'tcg' && <div style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, border: '2px double rgba(255,255,255,0.18)' }} />}
+      {s.shape === 'tech' && <>
+        <div style={{ position: 'absolute', left: 0, top: 0, width: 16, height: 16, borderLeft: `2px solid ${s.band}`, borderTop: `2px solid ${s.band}` }} />
+        <div style={{ position: 'absolute', right: 0, bottom: 0, width: 16, height: 16, borderRight: `2px solid ${s.band}`, borderBottom: `2px solid ${s.band}` }} />
+      </>}
+      {s.shape === 'metal' && <div style={{ position: 'absolute', left: 0, right: 0, top: 36, height: 10, background: 'rgba(0,0,0,0.35)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.3)' }} />}
+      {s.shape === 'neon' && <div style={{ position: 'absolute', inset: 3, border: `1px solid ${s.band}`, boxShadow: `0 0 8px ${s.band}66 inset` }} />}
+      {s.shape === 'poster' && <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 16, background: 'rgba(0,0,0,0.35)' }} />}
+
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 8, background: s.band, boxShadow: 'inset -1px 0 0 rgba(0,0,0,0.25)' }} />
 
       <div style={{ position: 'absolute', left: 10, right: 6, top: 6, textAlign: 'center', fontFamily: "'VT323',monospace", fontSize: 10, letterSpacing: '0.14em', color: '#fff7e1', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
         {stars}
+      </div>
+
+      <div style={{ position: 'absolute', left: 10, right: 6, top: 16, textAlign: 'center', fontFamily: "'VT323',monospace", fontSize: 8, letterSpacing: '0.12em', color: '#f4e4c2', opacity: 0.9 }}>
+        {s.brand}
       </div>
 
       <div style={{ position: 'absolute', right: 4, top: 26, padding: '1px 4px', borderRadius: 4, background: 'rgba(0,0,0,0.35)', fontFamily: "'VT323',monospace", fontSize: 9, letterSpacing: '0.07em', color: s.band }}>
